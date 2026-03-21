@@ -1,24 +1,23 @@
 # Design Review Project
 
-This folder is a design review tool. When the user types "dr" or asks to start a design review:
+## How to start a review
 
-1. Read `manifest.md` — it contains all rules for how to conduct the review
-2. Read `screenshots/frontend-latest.png` — this is the current frontend screenshot (taken by `dr.js`)
-3. The user will provide the Figma design screenshot directly in the chat
-4. Follow the manifest exactly — do not improvise or skip steps
+When the user types "dr":
 
-## How this works
-
-The user runs `node dr.js` before starting a review. That script:
-- Pulls the latest `manifest.md` from GitHub
-- Connects to Chrome via CDP on port 9222
-- Sets viewport to 1440px
-- Takes a full-page screenshot → saves as `screenshots/frontend-latest.png`
-
-Then the user types "dr" in Claude Code and provides the Figma screenshot.
+1. Ask: "Paste the Figma URL for this review:"
+2. Wait for the URL
+3. Run via Bash: `node dr.js "<figma_url>"` — this fetches the latest manifest, downloads the Figma design, and takes the frontend screenshot
+4. Read `manifest.md` in full
+5. Read `screenshots/frontend-latest.png` and `screenshots/figma-latest.png`
+6. Perform the visual comparison per manifest rules
+7. Present the bug table and ask Y/N
+8. On Y: ask once for Figma link (already provided — confirm or use the same URL), then run `node generate-report.js` via Bash
+9. Open the generated HTML file via Bash: `open design-review-*.html`
 
 ## Important
 
-- The manifest is the single source of truth for review rules
-- Always read the manifest fresh from `manifest.md` at the start of each review
-- Write HTML reports to this folder with the filename format from the manifest
+- Everything runs inside Claude Code — the user never needs a second terminal
+- `node dr.js "<url>"` always receives the Figma URL as an argument (non-interactive)
+- `manifest.md` is fetched fresh from GitHub on every run
+- Screenshots are auto-deleted after report generation
+- HTML reports are saved in this folder

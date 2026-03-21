@@ -2,3 +2,4 @@ node_modules/
 screenshots/
 manifest.md
 *.html
+.env

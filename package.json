@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "description": "Design review tool via Chrome CDP + Claude Code",
   "scripts": {
-    "chrome": "open -na 'Google Chrome' --args --remote-debugging-port=9222 --no-first-run",
-    "dr": "node dr.js"
+    "chrome": "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-dr &",
+    "start": "node dr.js"
   },
   "dependencies": {
-    "chrome-remote-interface": "^0.33.2"
+    "chrome-remote-interface": "^0.33.2",
+    "dotenv": "^17.3.1",
+    "sharp": "^0.34.5"
   }
 }
