@@ -1,0 +1,12 @@
+{
+  "name": "design-review",
+  "version": "1.0.0",
+  "description": "Design review tool via Chrome CDP + Claude Code",
+  "scripts": {
+    "chrome": "open -na 'Google Chrome' --args --remote-debugging-port=9222 --no-first-run",
+    "dr": "node dr.js"
+  },
+  "dependencies": {
+    "chrome-remote-interface": "^0.33.2"
+  }
+}
