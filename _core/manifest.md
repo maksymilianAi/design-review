@@ -51,6 +51,8 @@ If the result is not 1440 — report it and stop. Do not proceed with a wrong vi
 - Transparent backgrounds that visually match due to parent background
 - Pagination page count (dynamic data)
 - Claude plugin UI elements (e.g. "Claude is active in this tab group")
+- Charts, graphs, progress bars and their legends — data-driven, will never match exactly
+- Any content that is clearly dynamic (user data, counts, percentages, dates)
 
 **Must check:** Page header with breadcrumbs — must match the design exactly
 
