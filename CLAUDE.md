@@ -10,8 +10,8 @@ When the user types "dr", or on startup:
 
 1. Ask: "Paste the Figma URL for this review:"
 2. Wait for the URL
-3. Ask: "Open the page you want to review in the Chrome window, then press Enter."
-4. Wait for the user to press Enter
+3. Ask: "Open the page you want to review in the Chrome window, then type 'go'."
+4. Wait for the user to reply "go"
 5. Run via Bash: `node _core/dr.js "<figma_url>"` — this downloads the Figma design and takes the frontend screenshot
 4. Read `manifest.md` in full
 5. Read `screenshots/frontend-latest.png` and `screenshots/figma-latest.png`

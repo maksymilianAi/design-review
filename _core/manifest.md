@@ -66,6 +66,14 @@ Check these visually from the screenshots — use DevTools only if a difference 
 - Spacing between icon and adjacent text
 - Static text must match exactly — flag with ❌ Text mismatch / ⚠️ Typo in frontend / ⚠️ Typo in design
 
+## Mandatory checks — never skip these
+
+**Text colors:** For every visible text element (headings, labels, totals, amounts, status text) — compare the color in the frontend screenshot against the design. A color difference is a bug even if everything else looks correct. Use DevTools to get the exact hex value when a difference is spotted.
+
+**Table column headers:** Count every column header in the design and verify each one exists in the frontend with the exact same label. A missing column header (e.g. "Provider") is a bug. A wrong label is a bug. Do this before anything else on pages with tables.
+
+**Legend labels:** Count every label in any legend (chart legend, filter legend, category list) in the design and verify each exists in the frontend. Missing labels are bugs regardless of whether the chart data is dynamic.
+
 DevTools only when visual difference is confirmed:
 - Line height
 - Exact margin between blocks
