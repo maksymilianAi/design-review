@@ -1,6 +1,5 @@
 _core/node_modules/
 _core/screenshots/
-_core/manifest.md
 config/.env
 *.html
 .DS_Store

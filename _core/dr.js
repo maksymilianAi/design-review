@@ -8,7 +8,6 @@ const https = require('https');
 
 const TARGET_WIDTH    = 1440;
 const SCREENSHOTS_DIR = path.join(__dirname, 'screenshots');
-const MANIFEST_URL    = 'https://raw.githubusercontent.com/maksymilianAi/Manifest_DR/main/manifest.md';
 const MANIFEST_PATH   = path.join(__dirname, 'manifest.md');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -53,20 +52,18 @@ function figmaApiGet(apiPath) {
 
 function askNewToken() {
   const { execSync } = require('child_process');
-  const script = `
-    set t to text returned of (display dialog "Your Figma token is invalid or expired. Paste a new one:" ¬
-      default answer "" ¬
-      with title "Design Review — Token Expired" ¬
-      buttons {"Cancel", "Save"} default button "Save")
-    return t
-  `;
+  const tmpScript = '/tmp/dr-token-dialog.applescript';
+  const script = `set t to text returned of (display dialog "Your Figma token is invalid or expired.\nPaste a new personal access token from figma.com \u2192 Settings \u2192 Security:" default answer "" with title "Design Review \u2014 Token Expired" buttons {"Cancel", "Save"} default button "Save")\nreturn t`;
   try {
-    const newToken = execSync(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`).toString().trim();
+    fs.writeFileSync(tmpScript, script);
+    const newToken = execSync(`osascript "${tmpScript}"`).toString().trim();
+    fs.unlinkSync(tmpScript);
     if (!newToken) return false;
-    require('fs').writeFileSync(ENV_PATH, `FIGMA_TOKEN=${newToken}\n`);
+    fs.writeFileSync(ENV_PATH, `FIGMA_TOKEN=${newToken}\n`);
     process.env.FIGMA_TOKEN = newToken;
     return true;
   } catch {
+    try { fs.unlinkSync(tmpScript); } catch {}
     return false;
   }
 }
@@ -77,11 +74,6 @@ function parseFigmaUrl(url) {
   return { fileKey: match[1], nodeId: match[2].replace(/-/g, ':') };
 }
 
-async function fetchManifest() {
-  const { status, body } = await httpsGet(MANIFEST_URL);
-  if (status !== 200) throw new Error(`GitHub returned ${status}`);
-  fs.writeFileSync(MANIFEST_PATH, body);
-}
 
 async function downloadFigmaScreenshot(figmaUrl) {
   process.stdout.write('⬇️  Fetching Figma design... ');
@@ -129,15 +121,7 @@ async function run() {
   if (!figmaUrl) figmaUrl = await askFigmaUrl();
 
   // 1. Manifest
-  process.stdout.write('⬇️  Fetching latest manifest... ');
-  try {
-    await fetchManifest();
-    console.log('done');
-  } catch (err) {
-    console.log(`\n⚠️  ${err.message}`);
-    if (!fs.existsSync(MANIFEST_PATH)) { console.error('❌ No local manifest. Cannot proceed.'); process.exit(1); }
-    console.log('   Using cached local version.');
-  }
+  if (!fs.existsSync(MANIFEST_PATH)) { console.error('❌ manifest.md not found in _core/. Cannot proceed.'); process.exit(1); }
 
   // 2. Figma design (optional — skip if no URL provided)
   if (figmaUrl) {
