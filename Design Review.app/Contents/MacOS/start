@@ -4,7 +4,7 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../" && pwd)"
 APP_PATH="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Extend PATH to cover common install locations for node and claude
-export PATH="/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node/ 2>/dev/null | sort -V | tail -1)/bin:$PATH"
+export PATH="$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node/ 2>/dev/null | sort -V | tail -1)/bin:$PATH"
 
 # ── Requirement checks ────────────────────────────────────────────────────────
 
