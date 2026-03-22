@@ -21,3 +21,4 @@ When the user types "dr":
 - `manifest.md` is fetched fresh from GitHub on every run
 - Screenshots are auto-deleted after report generation
 - HTML reports are saved in this folder
+- **Never ask the user for their Figma token.** It is stored in `config/.env`. The script handles missing or expired tokens automatically via a native macOS dialog.

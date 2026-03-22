@@ -28,6 +28,14 @@ function httpsGet(url) {
 
 const ENV_PATH = path.join(__dirname, '../config/.env');
 
+function ensureToken() {
+  if (!process.env.FIGMA_TOKEN) {
+    console.log('⚠️  No Figma token found.');
+    const saved = askNewToken();
+    if (!saved) { console.error('❌ No token provided. Cannot proceed.'); process.exit(1); }
+  }
+}
+
 function figmaApiGet(apiPath) {
   const token = process.env.FIGMA_TOKEN;
   if (!token) throw new Error('FIGMA_TOKEN not set');
@@ -133,6 +141,7 @@ async function run() {
 
   // 2. Figma design (optional — skip if no URL provided)
   if (figmaUrl) {
+    ensureToken();
     try {
       await downloadFigmaScreenshot(figmaUrl);
     } catch (err) {
