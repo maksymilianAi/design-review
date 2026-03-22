@@ -173,28 +173,28 @@ After running any JS console command, close DevTools entirely before taking the 
 For each bug individually:
 1. Get the bounding box of the problem element:
    `const r = document.querySelector('SELECTOR').getBoundingClientRect(); console.log(r.top, r.left, r.width, r.height)`
-2. Add padding: 16px horizontal, 10px vertical around the element
-3. Take a real screenshot crop of that area from the browser
+2. Determine the crop window:
+   - Center the crop on the element: `cropX = r.left + r.width/2 - cropWidth/2`
+   - Use cropWidth = element width + 120px padding each side (minimum 300px total)
+   - Use cropHeight = element height + 40px padding top and bottom (minimum 100px)
+   - **The element must appear in the horizontal center of the crop — never at the left or right edge**
+3. Strip the sidebar: if `cropX < sidebarWidth`, shift cropX right so the crop starts at `sidebarWidth + 8px`. Then re-center: recalculate so the element is still centered within the remaining crop window.
+4. Take the browser screenshot crop of that exact window.
 
-4. Find the matching area in the Figma screenshot:
-   - The Figma crop must show the exact same element as the frontend crop — same component, same position in the layout
-   - Use the property being compared (e.g. "Total value color") to locate the right element in Figma — do not crop a different element that happens to be nearby
-   - If the bug is about a text element, crop the text in Figma — not a chart, not a container around it
-   - Visually verify: both crops should look like the same UI element, just styled differently
+5. Find the matching area in the Figma screenshot:
+   - Locate the exact same element in the Figma image (same component, same layout position)
+   - Crop the same relative area around that element — same padding, same centering logic
+   - If the bug is about a text element, crop that text in Figma — not the surrounding container
+   - Visually verify: both crops must show the same UI element, just styled differently. If they look like different things, re-crop.
 
-5. Scale both crops to the same height (use the taller of the two, then apply zoom multiplier)
-6. Ensure height ≥ 100px after scaling
+6. Scale both crops to the same height (use the taller of the two, then apply zoom multiplier)
+7. Ensure height ≥ 100px after scaling
 
-### Centering rule
-The element being compared must appear centered in both the frontend and design crop. Calculate the element's center point from the bounding rect and ensure equal padding on all sides. Never let the subject sit at the far left or right edge of the frame.
-
-Example: if the bug is about a label in a breadcrumb, crop so that label sits in the middle of the screenshot — not at the edge.
-
-### Sidebar edge case
-If the problem element starts right after the sidebar:
-- Find the exact pixel where the sidebar ends (scan for dark navy pixels)
-- Start the crop from that x position + a small gap
-- The content must be centered in the remaining crop window
+### Centering checklist — verify before embedding
+- [ ] The bug element is horizontally centered in the frontend crop (equal space left and right)
+- [ ] The bug element is horizontally centered in the Figma crop (equal space left and right)
+- [ ] No sidebar pixels appear in either crop
+- [ ] The text or element being compared is fully visible — not cut off at any edge
 
 ---
 
