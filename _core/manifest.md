@@ -37,6 +37,7 @@ If the result is not 1440 — report it and stop. Do not proceed with a wrong vi
 ## Rules
 - Do NOT show a plan, outline, or list of steps — begin immediately
 - Do NOT ask for approval before proceeding
+- Do NOT show intermediate analysis, check results, or commentary — output the bug table only
 - Take MAXIMUM 1 screenshot of the browser for comparison
 - Only check what looks visually different in the provided screenshots
 - Use DevTools only to verify values of elements where a visual difference is already spotted — never proactively on elements that look correct
