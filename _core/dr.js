@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../config/.env') });
 
 const CDP = require('chrome-remote-interface');
 const fs = require('fs');

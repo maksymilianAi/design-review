@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#90C4FD"/>
+      <stop offset="100%" stop-color="#3E7ED9"/>
+    </linearGradient>
+    <radialGradient id="star" cx="32%" cy="26%" r="72%" fx="32%" fy="26%">
+      <stop offset="0%"   stop-color="#FFFFFF"/>
+      <stop offset="55%"  stop-color="#EEF5FF"/>
+      <stop offset="100%" stop-color="#BAD4FF"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="18" stdDeviation="26" flood-color="#1A4080" flood-opacity="0.38"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle background -->
+  <rect width="1024" height="1024" rx="224" ry="224" fill="url(#bg)"/>
+
+  <!--
+    4-pointed star, smooth G1-continuous bezier curves.
+    Tips at ±300 from center (512,512):
+      Top  (512,212)  Right (812,512)  Bottom (512,812)  Left (212,512)
+    Waist at r≈130 from center on diagonals:
+      TL (420,420)  TR (604,420)  BR (604,604)  BL (420,604)
+    Control points ensure horizontal/vertical tangents at tips
+    and 45° smooth continuity at waist points.
+  -->
+  <path
+    d="M 512 212
+       C 572 212, 544 360, 604 420
+       C 664 480, 812 452, 812 512
+       C 812 572, 664 544, 604 604
+       C 544 664, 572 812, 512 812
+       C 452 812, 480 664, 420 604
+       C 360 544, 212 572, 212 512
+       C 212 452, 360 480, 420 420
+       C 480 360, 452 212, 512 212 Z"
+    fill="url(#star)"
+    filter="url(#shadow)"
+  />
+</svg>

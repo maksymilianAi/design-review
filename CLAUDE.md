@@ -6,12 +6,12 @@ When the user types "dr":
 
 1. Ask: "Paste the Figma URL for this review:"
 2. Wait for the URL
-3. Run via Bash: `node dr.js "<figma_url>"` — this fetches the latest manifest, downloads the Figma design, and takes the frontend screenshot
+3. Run via Bash: `node _core/dr.js "<figma_url>"` — this fetches the latest manifest, downloads the Figma design, and takes the frontend screenshot
 4. Read `manifest.md` in full
 5. Read `screenshots/frontend-latest.png` and `screenshots/figma-latest.png`
 6. Perform the visual comparison per manifest rules
 7. Present the bug table and ask Y/N
-8. On Y: ask once for Figma link (already provided — confirm or use the same URL), then run `node generate-report.js` via Bash
+8. On Y: ask once for Figma link (already provided — confirm or use the same URL), then run `node _core/generate-report.js` via Bash
 9. Open the generated HTML file via Bash: `open ~/Desktop/design-review-*.html`
 
 ## Important
