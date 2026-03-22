@@ -40,6 +40,24 @@ If the result is not 1440 — report it and stop.
 
 ---
 
+## Output format — MANDATORY
+
+**Bugs MUST be output as a markdown table. This is the only allowed format.**
+
+| # | Component | Property | Expected (Figma) | Actual (Frontend) |
+|---|-----------|----------|------------------|-------------------|
+
+FORBIDDEN output formats — never use these:
+- Bullet points: `- Bug: ...`
+- Numbered prose: `1. Bug: ...`
+- Bold labels: `**Component:** ...`
+- Paragraphs describing bugs
+- Any format other than table rows
+
+If you catch yourself writing a dash, asterisk, or number at the start of a bug — STOP. Delete it. Add a table row instead.
+
+---
+
 ## Rules
 - Do NOT show a plan, outline, or list of steps — begin immediately
 - Do NOT ask for approval before proceeding
@@ -47,14 +65,6 @@ If the result is not 1440 — report it and stop.
 - Do NOT take any browser screenshots — they are provided automatically
 - Use DevTools only to verify exact values where a visual difference is already spotted — never proactively
 - When DevTools is needed, batch ALL queries into a single JS call — never separate calls per element
-
-## Output format — enforced
-Bugs MUST be output as a markdown table. No exceptions.
-
-| # | Component | Property | Expected (Figma) | Actual (Frontend) |
-|---|-----------|----------|------------------|-------------------|
-
-Never output bugs as a list, numbered prose, or any other format. If you find yourself writing "1. Bug:" — stop and reformat as a table row.
 
 ---
 
