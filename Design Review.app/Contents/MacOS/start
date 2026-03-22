@@ -1,11 +1,9 @@
 #!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR/../../../"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../" && pwd)"
 
-ENV_FILE="config/.env"
-
-# Check if token is already saved
-TOKEN=$(grep "^FIGMA_TOKEN=" "$ENV_FILE" 2>/dev/null | cut -d= -f2-)
+# Read token from Keychain (no Documents folder permission needed)
+TOKEN=$(security find-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w 2>/dev/null)
 
 if [ -z "$TOKEN" ]; then
   TOKEN=$(osascript <<'APPLESCRIPT'
@@ -22,8 +20,9 @@ APPLESCRIPT
     exit 0
   fi
 
-  mkdir -p config
-  echo "FIGMA_TOKEN=$TOKEN" > "$ENV_FILE"
+  # Save to Keychain
+  security add-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w "$TOKEN" 2>/dev/null || \
+  security add-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w "$TOKEN" -U 2>/dev/null
 
   osascript -e 'display notification "Token saved. You are ready to go!" with title "Design Review"'
 fi
@@ -35,4 +34,10 @@ fi
   --no-first-run \
   --no-default-browser-check &
 
-claude .
+# Open Terminal with Claude Code running inside it
+osascript <<APPLESCRIPT
+tell application "Terminal"
+  do script "cd '$PROJECT_DIR' && claude ."
+  activate
+end tell
+APPLESCRIPT

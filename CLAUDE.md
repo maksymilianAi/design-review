@@ -10,7 +10,9 @@ When the user types "dr", or on startup:
 
 1. Ask: "Paste the Figma URL for this review:"
 2. Wait for the URL
-3. Run via Bash: `node _core/dr.js "<figma_url>"` — this fetches the latest manifest, downloads the Figma design, and takes the frontend screenshot
+3. Ask: "Open the page you want to review in the Chrome window, then press Enter."
+4. Wait for the user to press Enter
+5. Run via Bash: `node _core/dr.js "<figma_url>"` — this downloads the Figma design and takes the frontend screenshot
 4. Read `manifest.md` in full
 5. Read `screenshots/frontend-latest.png` and `screenshots/figma-latest.png`
 6. Perform the visual comparison per manifest rules

@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-require('dotenv').config({ path: require('path').join(__dirname, '../config/.env') });
 
 const CDP = require('chrome-remote-interface');
 const fs = require('fs');
@@ -27,9 +26,27 @@ function httpsGet(url) {
 
 const ENV_PATH = path.join(__dirname, '../config/.env');
 
-function ensureToken() {
+// Load token: Keychain first, fall back to .env
+function loadToken() {
+  const { execSync } = require('child_process');
+  try {
+    const token = execSync(`security find-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w 2>/dev/null`, { shell: '/bin/bash' }).toString().trim();
+    if (token) { process.env.FIGMA_TOKEN = token; return; }
+  } catch {}
+  require('dotenv').config({ path: ENV_PATH });
+}
+loadToken();
+
+async function ensureToken() {
   if (!process.env.FIGMA_TOKEN) {
     console.log('⚠️  No Figma token found.');
+    const saved = askNewToken();
+    if (!saved) { console.error('❌ No token provided. Cannot proceed.'); process.exit(1); }
+  }
+  // Validate the token is actually accepted by Figma
+  const check = await figmaApiGet('/v1/me');
+  if (check.status === 401) {
+    console.log('⚠️  Figma token is invalid or expired.');
     const saved = askNewToken();
     if (!saved) { console.error('❌ No token provided. Cannot proceed.'); process.exit(1); }
   }
@@ -59,6 +76,9 @@ function askNewToken() {
     const newToken = execSync(`osascript "${tmpScript}"`).toString().trim();
     fs.unlinkSync(tmpScript);
     if (!newToken) return false;
+    // Save to Keychain and .env
+    const { execSync } = require('child_process');
+    try { execSync(`security add-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w "${newToken}" 2>/dev/null || security add-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w "${newToken}" -U 2>/dev/null`, { shell: '/bin/bash' }); } catch {}
     fs.writeFileSync(ENV_PATH, `FIGMA_TOKEN=${newToken}\n`);
     process.env.FIGMA_TOKEN = newToken;
     return true;
@@ -81,13 +101,17 @@ async function downloadFigmaScreenshot(figmaUrl) {
 
   let response = await figmaApiGet(`/v1/images/${fileKey}?ids=${encodeURIComponent(nodeId)}&format=png&scale=1`);
 
-  // Handle expired / invalid token
-  if (response.status === 401 || response.status === 403 || response.data.status === 403) {
+  // Only treat HTTP 401 as a token error — everything else is a file/node access problem
+  if (response.status === 401) {
     console.log('\n⚠️  Figma token is invalid or expired.');
     const updated = askNewToken();
     if (!updated) throw new Error('No new token provided. Cannot proceed.');
     response = await figmaApiGet(`/v1/images/${fileKey}?ids=${encodeURIComponent(nodeId)}&format=png&scale=1`);
-    if (response.status === 401 || response.status === 403) throw new Error('New token is also invalid.');
+    if (response.status === 401) throw new Error('New token is also invalid.');
+  }
+
+  if (response.status === 403 || response.data?.status === 403) {
+    throw new Error(`No access to this Figma file. Make sure your token has permission to view it.\n   File key: ${fileKey}`);
   }
 
   const data = response.data;
@@ -125,7 +149,7 @@ async function run() {
 
   // 2. Figma design (optional — skip if no URL provided)
   if (figmaUrl) {
-    ensureToken();
+    await ensureToken();
     try {
       await downloadFigmaScreenshot(figmaUrl);
     } catch (err) {
