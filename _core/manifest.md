@@ -178,33 +178,47 @@ Scale crops up by 2× for normal elements. Use 3× for thin rows (table headers,
 **Before taking any screenshot: close DevTools completely.**
 After running any JS console command, close DevTools entirely before taking the screenshot. Never take a screenshot while DevTools is open, the console is visible, or any element is highlighted by the inspector. The DevTools inspector overlay causes orange/yellow tinting that covers the element and makes the screenshot unusable. If a screenshot comes out with an orange overlay — discard it, close DevTools, and retake it.
 
-### How to crop
+### How to crop — anchor point method
 
-For each bug individually:
-1. Get the bounding box of the problem element:
-   `const r = document.querySelector('SELECTOR').getBoundingClientRect(); console.log(r.top, r.left, r.width, r.height)`
-2. Determine the crop window:
-   - Center the crop on the element: `cropX = r.left + r.width/2 - cropWidth/2`
-   - Use cropWidth = element width + 120px padding each side (minimum 300px total)
-   - Use cropHeight = element height + 40px padding top and bottom (minimum 100px)
-   - **The element must appear in the horizontal center of the crop — never at the left or right edge**
-3. Strip the sidebar: if `cropX < sidebarWidth`, shift cropX right so the crop starts at `sidebarWidth + 8px`. Then re-center: recalculate so the element is still centered within the remaining crop window.
-4. Take the browser screenshot crop of that exact window.
+The bug element is the **anchor point**. The crop is built around it, not beside it.
 
-5. Find the matching area in the Figma screenshot:
-   - Locate the exact same element in the Figma image (same component, same layout position)
-   - Crop the same relative area around that element — same padding, same centering logic
-   - If the bug is about a text element, crop that text in Figma — not the surrounding container
-   - Visually verify: both crops must show the same UI element, just styled differently. If they look like different things, re-crop.
+**Step 1 — Find the anchor point (frontend)**
+```js
+const r = document.querySelector('SELECTOR').getBoundingClientRect();
+const anchorX = r.left + r.width / 2;
+const anchorY = r.top + r.height / 2;
+console.log('anchor', anchorX, anchorY, 'size', r.width, r.height);
+```
 
-6. Scale both crops to the same height (use the taller of the two, then apply zoom multiplier)
-7. Ensure height ≥ 100px after scaling
+**Step 2 — Calculate crop window**
+- `cropW = Math.max(r.width + 240, 400)` — element + 120px each side, min 400px
+- `cropH = Math.max(r.height + 80, 120)` — element + 40px top/bottom, min 120px
+- `cropX = anchorX - cropW / 2`
+- `cropY = anchorY - cropH / 2`
 
-### Centering checklist — verify before embedding
-- [ ] The bug element is horizontally centered in the frontend crop (equal space left and right)
-- [ ] The bug element is horizontally centered in the Figma crop (equal space left and right)
-- [ ] No sidebar pixels appear in either crop
-- [ ] The text or element being compared is fully visible — not cut off at any edge
+**Step 3 — Strip the sidebar**
+If `cropX` falls inside the sidebar, shift it: `cropX = sidebarRightEdge + 8`.
+Then recalculate: `cropW = (anchorX - cropX) * 2` so the anchor stays centered in the new window.
+
+**Step 4 — Take the frontend crop**
+Crop the browser screenshot at (cropX, cropY, cropW, cropH).
+The bug element must appear dead-center horizontally and vertically.
+
+**Step 5 — Match in the Figma screenshot**
+- Find the same element in the Figma image using layout position and visual appearance
+- Place the same anchor-point logic: crop centered on that element with the same cropW × cropH
+- The two crops must look like the same component — just styled differently
+
+**Step 6 — Scale and validate**
+- Scale both to the same height (taller of the two × zoom multiplier)
+- Apply 2× zoom for normal elements, 3× for thin/small elements
+- Final height must be ≥ 100px
+
+### Before embedding — verify all four:
+- The bug element is **centered** in both crops (equal margin on all sides)
+- The bug element is **fully visible** — nothing cut off at any edge
+- **No sidebar** pixels in either crop
+- Both crops show the **same element**, not different parts of the page
 
 ---
 
