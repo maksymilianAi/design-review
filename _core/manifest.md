@@ -48,6 +48,14 @@ If the result is not 1440 — report it and stop.
 - Use DevTools only to verify exact values where a visual difference is already spotted — never proactively
 - When DevTools is needed, batch ALL queries into a single JS call — never separate calls per element
 
+## Output format — enforced
+Bugs MUST be output as a markdown table. No exceptions.
+
+| # | Component | Property | Expected (Figma) | Actual (Frontend) |
+|---|-----------|----------|------------------|-------------------|
+
+Never output bugs as a list, numbered prose, or any other format. If you find yourself writing "1. Bug:" — stop and reformat as a table row.
+
 ---
 
 ## Core principle — what is dynamic and what is not
@@ -76,6 +84,7 @@ Rule: never skip an entire component because it contains dynamic data. Only skip
 - Sticky header on scrolled screenshots
 - Transparent backgrounds that visually match due to parent background
 - Claude plugin UI elements (e.g. "Claude is active in this tab group")
+- Chart and graph data visualizations — bars, segments, lines, pie slices, progress fills. The data is dynamic. Do NOT flag differences in chart appearance, segment sizes, colors of chart segments, or chart legend labels.
 
 ---
 
@@ -91,12 +100,17 @@ The design screenshot is the source of truth. Work top to bottom through these z
 
 For every visible element in each zone, check:
 1. **Present?** — exists in design but missing in frontend → bug
-2. **Color** — text color, background, border. Do not assume similar colors are the same.
+2. **Color** — text color, background, border. Never assume similar-looking colors are the same. Pay extra attention to monetary amounts, totals, and summary values — these are commonly the wrong color.
 3. **Text content** — static labels, headings, column headers, placeholders must match exactly
 4. **Font size and weight**
 5. **Spacing** — padding, gaps, margins
 6. **Icons** — type, size, color
 7. **Component dimensions** — height, border radius
+
+**Three things that are always missed — check these explicitly every time:**
+- **Section title counters** — if a heading has a number or count next to it in the design (e.g. "Expenses 24"), check the frontend has it too. Missing counter = bug.
+- **All table column headers including the first one** — count every column header in the design. The first column is the most commonly missing. Every header must be present with exact text.
+- **Text color of amounts and totals** — monetary values and summary numbers shown in a brand color (blue, teal, green) when the design shows black or dark = bug.
 
 Do not stop after finding a few bugs — complete all five zones before writing the bug table.
 If unsure whether something is dynamic — flag it in the table. Let the user decide.
@@ -126,20 +140,6 @@ Plain hex only — never add brackets, parentheses, or labels like "(black)" or 
 - Do NOT assign priority — the user decides
 - Do NOT use bold text in chat responses — plain text only
 - Only the bug table uses formatting
-
----
-
-## Output table
-Always output bugs as a markdown table — never as a list, never as prose.
-
-The table has exactly 5 columns in this exact order — no more, no less:
-
-| # | Component | Property | Expected (Figma) | Actual (Frontend) |
-|---|-----------|----------|------------------|-------------------|
-| 1 | Button | Height | 40px | 42px |
-
-- Every cell in every row must be filled — no empty cells
-- No Priority column, no extra columns of any kind
 
 ---
 
