@@ -84,7 +84,7 @@ osascript -e 'display notification "A dedicated Chrome window just opened. You w
 # Fix 2: Show sign-in guidance before claude launches, then start
 osascript <<APPLESCRIPT
 tell application "Terminal"
-  do script "cd '$PROJECT_DIR/_core' && ([ -d node_modules ] || npm install) && cd '$PROJECT_DIR' && echo '' && echo '─────────────────────────────────────────' && echo '  Design Review is starting...' && echo '  If asked to sign in to Claude, follow' && echo '  the prompts — it only takes a minute.' && echo '─────────────────────────────────────────' && echo '' && claude ."
+  do script "cd '$PROJECT_DIR/_core' && ([ -d node_modules ] || npm install) && cd '$PROJECT_DIR' && echo '' && echo '─────────────────────────────────────────' && echo '  Design Review is starting...' && echo '  If asked to sign in to Claude, follow' && echo '  the prompts — it only takes a minute.' && echo '─────────────────────────────────────────' && echo '' && trap 'pkill -f \"user-data-dir=/tmp/chrome-dr\" 2>/dev/null' EXIT INT TERM HUP; claude ."
   activate
 end tell
 APPLESCRIPT
