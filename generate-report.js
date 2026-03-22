@@ -5,9 +5,11 @@ const sharp = require('sharp');
 const fs = require('fs');
 const path = require('path');
 
+const os = require('os');
 const FIGMA_PATH  = path.join(__dirname, 'screenshots/figma-latest.png');
 const FRONTEND_PATH = path.join(__dirname, 'screenshots/frontend-latest.png');
 const SCREENSHOTS_DIR = path.join(__dirname, 'screenshots');
+const OUTPUT_DIR  = path.join(os.homedir(), 'Desktop');
 const DESIGN_VIEWPORT = 1440;
 const PADDING_H = 16;
 const PADDING_V = 10;
@@ -237,7 +239,7 @@ async function main() {
   }
 
   const filename = `design-review-${FEATURE}-${DATE_ISO}.html`;
-  fs.writeFileSync(path.join(__dirname, filename), generateHTML(cards));
+  fs.writeFileSync(path.join(OUTPUT_DIR, filename), generateHTML(cards));
   console.log(`\nReport generated: ${filename}`);
 
   cleanup();

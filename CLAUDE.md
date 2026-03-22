@@ -12,7 +12,7 @@ When the user types "dr":
 6. Perform the visual comparison per manifest rules
 7. Present the bug table and ask Y/N
 8. On Y: ask once for Figma link (already provided — confirm or use the same URL), then run `node generate-report.js` via Bash
-9. Open the generated HTML file via Bash: `open design-review-*.html`
+9. Open the generated HTML file via Bash: `open ~/Desktop/design-review-*.html`
 
 ## Important
 
