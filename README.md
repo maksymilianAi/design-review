@@ -14,8 +14,6 @@
 
 Design Review compares a Figma design frame against a live frontend page and produces a structured bug report. You provide a Figma URL, Claude does the comparison, and you get a polished HTML report saved to your Desktop — with side-by-side cropped screenshots of every bug.
 
-No manual diffing. No switching between tabs. No second terminal.
-
 ---
 
 ## Requirements
