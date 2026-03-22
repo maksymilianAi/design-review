@@ -1,6 +1,8 @@
 <div align="center">
 
-# 🔍 Design Review
+<img src="assets/icon.png" width="120" alt="Design Review" />
+
+# Design Review
 
 **AI-powered visual QA between Figma designs and your frontend — runs entirely inside Claude Code.**
 
