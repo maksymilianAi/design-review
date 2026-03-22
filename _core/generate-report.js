@@ -17,16 +17,15 @@ const ZOOM = 2;
 
 // ─── Session config (update each run) ────────────────────────────────────────
 const FIGMA_LINK    = 'https://www.figma.com/design/i6FM9wHcXPNjV2W3rfd18r/PP-1?node-id=19890-236099&t=rNkksWZJyFwtTpNR-4';
-const DATE_ISO      = '2026-03-21';
-const DATE_DISPLAY  = 'March 21, 2026';
+const DATE_ISO      = '2026-03-22';
+const DATE_DISPLAY  = 'March 22, 2026';
 const FEATURE       = 'expense-details';
 const FEATURE_TITLE = 'Expense Details';
 
 const BUGS = [
-  { id: 1, component: 'Breadcrumb', property: 'Content & structure', expected: '← Back · Elevate / Expense Details', actual: 'Home / Expense details', elementKey: 'breadcrumb', severity: 'CRIT', paddingH: 80 },
-  { id: 2, component: 'Breadcrumb', property: 'Text case', expected: 'Expense Details (capital D)', actual: 'Expense details (lowercase d)', elementKey: 'breadcrumb', severity: 'Minor', paddingH: 80 },
-  { id: 3, component: 'Expense Breakdown', property: 'Total amount color', expected: '#000000', actual: '#176AF6', elementKey: 'total', severity: 'CRIT' },
-  { id: 4, component: 'Expenses table', property: 'Provider column header', expected: 'Provider', actual: '(empty)', elementKey: 'tableHeader', severity: 'CRIT' },
+  { id: 1, component: 'Page header', property: 'Back button', expected: 'Present (← Back)', actual: 'Missing', elementKey: 'breadcrumb', severity: 'CRIT', paddingH: 120 },
+  { id: 2, component: 'Breadcrumb', property: 'Path text', expected: 'Elevate > Expense Details', actual: 'Home > Expense details', elementKey: 'breadcrumb', severity: 'Minor', paddingH: 120 },
+  { id: 3, component: 'Expense Breakdown', property: 'Legend labels', expected: 'Medical, Dental, Vision, Other (4 labels)', actual: 'Per Specific, Medical (2 labels, wrong names)', elementKey: 'expenseLegend', severity: 'CRIT' },
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -52,32 +51,40 @@ const QUERIES = {
     return null;
   })()`,
 
-  // Table header row for Expenses table
-  tableHeader: `(() => {
-    const selectors = ['thead tr', '[role="rowgroup"] [role="row"]', '[class*="table-header" i] [role="row"]', '[class*="TableHeader"]', 'table thead tr'];
+
+  // Expense Breakdown legend (colored dots + labels below the bar chart)
+  expenseLegend: `(() => {
+    const selectors = ['[class*="legend" i]', '[class*="Legend"]', '[class*="chart-legend" i]', '[class*="breakdown-legend" i]'];
     for (const s of selectors) {
       const el = document.querySelector(s);
-      if (el) { const r = el.getBoundingClientRect(); if (r.width > 300 && r.height > 0) return JSON.stringify(r.toJSON()); }
+      if (el) { const r = el.getBoundingClientRect(); if (r.width > 100 && r.height > 0 && r.height < 80) return JSON.stringify(r.toJSON()); }
     }
-    // Fallback: find row containing known column headers
-    const all = [...document.querySelectorAll('tr, [role="row"]')];
+    // Fallback: find element near top of page containing at least 2 dot-like children with text labels
+    const all = [...document.querySelectorAll('*')];
     const match = all.find(el => {
-      const t = el.textContent;
       const r = el.getBoundingClientRect();
-      return (t.includes('Requested') || t.includes('Provider') || t.includes('Status')) && r.width > 300 && r.height > 0 && r.height < 80;
+      const t = el.textContent;
+      return r.top > 80 && r.top < 400 && r.height > 0 && r.height < 60 && r.width > 100
+        && (t.includes('Medical') || t.includes('Dental') || t.includes('Per Specific'))
+        && el.children.length >= 2;
     });
     if (match) { const r = match.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
     return null;
   })()`,
 
-  // Total amount: "Total: $X" label in top-right of expense breakdown card
-  total: `(() => {
+  // Filter toolbar row (search + status/category/period filters)
+  filterToolbar: `(() => {
+    const selectors = ['[class*="filter" i]', '[class*="toolbar" i]', '[class*="search-bar" i]', '[class*="table-filter" i]'];
+    for (const s of selectors) {
+      const el = document.querySelector(s);
+      if (el) { const r = el.getBoundingClientRect(); if (r.width > 300 && r.height > 0 && r.height < 100) return JSON.stringify(r.toJSON()); }
+    }
+    // Fallback: find element containing Status and Category filter labels
     const all = [...document.querySelectorAll('*')];
-    // Find the smallest element whose text starts with "Total" and is in the upper part of the page
     const match = all.find(el => {
-      const t = el.textContent.trim();
+      const t = el.textContent;
       const r = el.getBoundingClientRect();
-      return t.match(/^Total[:\s]/) && r.width < 400 && r.height < 80 && r.height > 0 && r.top < 400;
+      return t.includes('Status') && t.includes('Category') && r.width > 300 && r.height > 0 && r.height < 100 && el.children.length > 1;
     });
     if (match) { const r = match.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
     return null;

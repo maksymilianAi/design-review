@@ -7,15 +7,12 @@ Always follow these rules when asked to do a design review.
 ---
 
 ## Viewport
-The page content must render at exactly 1440px width. The Claude panel occupies ~365px, so the total browser window width must be set to 1805px.
+The screenshot is taken automatically at 1440px via CDP — no manual resizing needed. The viewport is already set correctly by the capture script.
 
-At the start of every session, before taking any screenshot, run this in the browser console:
-`window.resizeTo(1805, window.outerHeight)`
-
-Then verify the content width is 1440px:
+If for any reason the content width needs to be verified:
 `document.documentElement.clientWidth`
 
-If the result is not 1440 — report it and stop. Do not proceed with a wrong viewport.
+If the result is not 1440 — report it and stop.
 
 ---
 
@@ -28,9 +25,8 @@ If the result is not 1440 — report it and stop. Do not proceed with a wrong vi
 ---
 
 ## Step 0 — Before starting
-1. Run `window.resizeTo(1805, window.outerHeight)` to set the viewport to 1440px content width
-2. Take one screenshot of the current browser page
-3. Begin analysis immediately — do not ask any questions
+1. Read both screenshots provided — frontend and Figma design
+2. Begin analysis immediately — do not ask any questions
 
 ---
 
@@ -39,7 +35,7 @@ If the result is not 1440 — report it and stop. Do not proceed with a wrong vi
 - Do NOT ask for approval before proceeding
 - Do NOT show intermediate analysis, check results, or commentary — output the bug table only
 - Take MAXIMUM 1 screenshot of the browser for comparison
-- Only check what looks visually different in the provided screenshots
+- Compare every visible element in the design against the frontend — do not skip zones or elements
 - Use DevTools only to verify values of elements where a visual difference is already spotted — never proactively on elements that look correct
 - When DevTools is needed, batch ALL queries into a single JS call — never separate calls per element
 
@@ -52,30 +48,29 @@ If the result is not 1440 — report it and stop. Do not proceed with a wrong vi
 - Transparent backgrounds that visually match due to parent background
 - Pagination page count (dynamic data)
 - Claude plugin UI elements (e.g. "Claude is active in this tab group")
-- Charts, graphs, progress bars and their legends — data-driven, will never match exactly
-- Any content that is clearly dynamic (user data, counts, percentages, dates)
+- Charts, graphs, progress bars, and their legends including legend labels
+- Table cell values (names, amounts, dates inside rows — backend data)
+
+**Dynamic number rule:** If a UI element exists in the design (counter, badge, total) but is missing entirely from the frontend — that is a bug. If it exists but shows a different number — not a bug.
 
 **Must check:** Page header with breadcrumbs — must match the design exactly
 
 ---
 
-## What to check
-Check these visually from the screenshots — use DevTools only if a difference is spotted:
-- Button HEIGHT (even 1px difference = bug) · WIDTH tolerance: ±10px acceptable
-- Border-radius, padding, gap between components
-- Icon type and size
-- Text size and color
-- Background and UI colors
-- Spacing between icon and adjacent text
-- Static text must match exactly — flag with ❌ Text mismatch / ⚠️ Typo in frontend / ⚠️ Typo in design
+## Comparison process
 
-## Mandatory checks — never skip these
+The design screenshot is the source of truth. Work through the page top to bottom, zone by zone. For each zone examine every visible element against the design — do not stop after finding a few bugs.
 
-**Text colors:** For every visible text element (headings, labels, totals, amounts, status text) — compare the color in the frontend screenshot against the design. A color difference is a bug even if everything else looks correct. Use DevTools to get the exact hex value when a difference is spotted.
+For each element check in this order:
+1. **Present?** — exists in design but missing in frontend → bug
+2. **Text content** — every static label, heading, column header, badge, placeholder must match exactly
+3. **Text color** — compare carefully, do not assume similar colors are the same. Monetary values and totals are commonly wrong color.
+4. **Text size / weight** — visually compare
+5. **UI colors** — buttons, tags, backgrounds, borders
+6. **Icons** — type, size, color
+7. **Spacing and dimensions** — gaps, padding, heights
 
-**Table column headers:** Count every column header in the design and verify each one exists in the frontend with the exact same label. A missing column header (e.g. "Provider") is a bug. A wrong label is a bug. Do this before anything else on pages with tables.
-
-**Legend labels:** Count every label in any legend (chart legend, filter legend, category list) in the design and verify each exists in the frontend. Missing labels are bugs regardless of whether the chart data is dynamic.
+If unsure whether something is dynamic — flag it. Let the user decide.
 
 DevTools only when visual difference is confirmed:
 - Line height
