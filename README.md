@@ -44,54 +44,44 @@ cd _core && npm install && cd ..
 
 Double-click **`Design Review.app`** in Finder.
 
-On first launch, a dialog will ask for your Figma API token. Paste it and click **Save** — it is stored locally in `config/.env` and never asked again.
+On first launch, a dialog will ask for your Figma API token. Paste it and click **Save** — it is stored securely in your macOS Keychain and never asked again.
 
 ---
 
 ## Running a design review
 
-### Step 1 — Open the app
+### Step 1 — Launch the app
 
 Double-click **`Design Review.app`**.
 
-This opens a dedicated Chrome window with the remote debugging port enabled, then launches Claude Code in the project directory.
+This opens a dedicated Chrome window with remote debugging enabled, then launches Claude Code in the project directory.
 
-### Step 2 — Navigate to the page
+### Step 2 — Paste the Figma URL
 
-In the Chrome window that opens, navigate to the frontend page you want to review.
+Claude automatically starts the review flow and asks for the Figma URL of the design frame you want to compare. Copy the link from Figma (right-click a frame → **Copy link**) and paste it.
 
-### Step 3 — Start the review in Claude Code
+### Step 3 — Open the page in Chrome
 
-In Claude Code, type:
+Claude will prompt you to navigate to the frontend page you want to review in the Chrome window. Once you're on the right page, type `go`.
 
-```
-dr
-```
-
-Claude will ask for the Figma URL of the design frame you want to compare against.
-
-### Step 4 — Paste the Figma URL
-
-Copy the link from Figma (right-click a frame → **Copy link**) and paste it. The tool will:
-
-- Fetch the latest review manifest from GitHub
+The tool will then:
 - Download the Figma design as a screenshot
-- Capture the current frontend page at 1440 px viewport
+- Capture the frontend page at 1440px viewport width
 
-### Step 5 — Review the bug table
+### Step 4 — Review the bug table
 
-Claude presents a table of visual discrepancies — spacing issues, wrong colors, missing elements, text mismatches — each with a severity rating (`CRIT` or `Minor`).
+Claude presents a table of visual discrepancies — missing elements, wrong colors, text mismatches, spacing issues, and more.
 
-Confirm with **Y** to generate the report, or **N** to discard.
+Confirm with **Y** to generate the report, or **N** to make changes.
 
-### Step 6 — Get the report
+### Step 5 — Get the report
 
 The HTML report is saved to your **Desktop** and opens automatically. It contains:
 
-- A summary of total, critical, and minor bugs
+- A summary of total bugs
 - Side-by-side cropped screenshots for each bug (Figma vs. Frontend)
 - A direct link to the Figma frame
-- Severity badges and property details
+- Property details for each discrepancy
 
 Screenshots are deleted from the project folder after the report is generated.
 
@@ -104,19 +94,26 @@ DR/
 ├── Design Review.app/        # macOS app bundle — double-click to start
 ├── _core/
 │   ├── dr.js                 # Takes screenshots, fetches Figma design
-│   └── generate-report.js    # Generates the HTML bug report
+│   ├── generate-report.js    # Generates the HTML bug report
+│   └── manifest.md           # All review rules and instructions
 ├── config/
 │   └── .env                  # Stores your Figma token (gitignored)
-└── CLAUDE.md                 # Instructions Claude follows during review
+└── CLAUDE.md                 # Points Claude Code to manifest.md
 ```
 
 ---
 
 ## Figma token
 
-Your token is stored in `config/.env` as `FIGMA_TOKEN=<token>`. If it expires or becomes invalid, a native macOS dialog will prompt you to paste a new one — the file is updated automatically.
+Your token is stored securely in the macOS Keychain. If it expires or becomes invalid, a native macOS dialog will prompt you to paste a new one — it is updated automatically.
 
 To generate a token: Figma → Settings → Security → **Personal access tokens**.
+
+---
+
+## Review rules
+
+All review rules — what to check, what to ignore, how bugs are reported, and how the HTML report is structured — live in `_core/manifest.md`. Edit that file to customize the review behavior.
 
 ---
 
