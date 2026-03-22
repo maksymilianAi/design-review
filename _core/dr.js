@@ -163,7 +163,7 @@ async function run() {
   try {
     client = await CDP({ port: 9222 });
   } catch {
-    console.error('❌ Cannot connect to Chrome. Run: npm run chrome');
+    console.error('❌ Cannot connect to Chrome. Make sure the Design Review app is open and the Chrome window it launched is still running.');
     process.exit(1);
   }
 

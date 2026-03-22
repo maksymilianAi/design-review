@@ -1,43 +1,57 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../" && pwd)"
+APP_PATH="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Extend PATH to cover common install locations for node and claude
 export PATH="/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node/ 2>/dev/null | sort -V | tail -1)/bin:$PATH"
 
 # ── Requirement checks ────────────────────────────────────────────────────────
 
+# Fix 3: Check if port 9222 is already in use — kill stale debug Chrome if needed
+if lsof -ti:9222 &>/dev/null; then
+  lsof -ti:9222 | xargs kill -9 2>/dev/null
+fi
+
 if ! /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version &>/dev/null; then
   osascript -e 'display dialog "Google Chrome is not installed.\n\nDownload it from google.com/chrome and try again." with title "Design Review — Missing Requirement" buttons {"OK"} default button "OK"'
   exit 1
 fi
 
+# Fix 1: Auto-install Node.js and relaunch instead of asking user to reopen
 if ! command -v node &>/dev/null; then
   INSTALL_NODE=$(osascript -e 'button returned of (display dialog "Node.js is not installed. It is required to run Design Review.\n\nWould you like to install it automatically?" with title "Design Review — Missing Requirement" buttons {"Cancel", "Install"} default button "Install")')
   if [ "$INSTALL_NODE" = "Cancel" ]; then exit 0; fi
-  # Install via Homebrew (install Homebrew first if needed)
   osascript <<APPLESCRIPT
 tell application "Terminal"
-  do script "(command -v brew &>/dev/null || /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\") && brew install node && echo '✅ Node.js installed. You can close this window and reopen Design Review.'"
+  do script "(command -v brew &>/dev/null || /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\") && brew install node && echo '✅ Node.js installed. Relaunching Design Review...' && sleep 2 && open '$APP_PATH'"
   activate
 end tell
 APPLESCRIPT
   exit 0
 fi
 
+# Fix 1: Auto-install Claude Code and relaunch instead of asking user to reopen
 if ! command -v claude &>/dev/null; then
-  osascript -e 'display dialog "Claude Code is not installed.\n\nDownload it from claude.ai/code and try again." with title "Design Review — Missing Requirement" buttons {"OK"} default button "OK"'
-  exit 1
+  INSTALL_CLAUDE=$(osascript -e 'button returned of (display dialog "Claude Code is not installed. It is required to run Design Review.\n\nWould you like to install it automatically?" with title "Design Review — Missing Requirement" buttons {"Cancel", "Install"} default button "Install")')
+  if [ "$INSTALL_CLAUDE" = "Cancel" ]; then exit 0; fi
+  osascript <<APPLESCRIPT
+tell application "Terminal"
+  do script "npm install -g @anthropic-ai/claude-code && echo '✅ Claude Code installed. Relaunching Design Review...' && sleep 2 && open '$APP_PATH'"
+  activate
+end tell
+APPLESCRIPT
+  exit 0
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 
-# Read token from Keychain (no Documents folder permission needed)
+# Fix 4: Figma token dialog includes instructions on where to find the token
 TOKEN=$(security find-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w 2>/dev/null)
 
 if [ -z "$TOKEN" ]; then
   TOKEN=$(osascript <<'APPLESCRIPT'
-    set theResult to display dialog "Paste your Figma API token to get started:" \
+    set theResult to display dialog "Paste your Figma personal access token below.\n\nTo get one:\nFigma → your profile icon → Settings → Security → Personal access tokens → Generate new token" \
       default answer "" \
       with title "Design Review — First Time Setup" \
       buttons {"Cancel", "Save"} \
@@ -50,24 +64,27 @@ APPLESCRIPT
     exit 0
   fi
 
-  # Save to Keychain
   security add-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w "$TOKEN" 2>/dev/null || \
   security add-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w "$TOKEN" -U 2>/dev/null
 
   osascript -e 'display notification "Token saved. You are ready to go!" with title "Design Review"'
 fi
 
-# Open Chrome with debug port (separate profile, existing Chrome stays open)
+# Open Chrome with debug port
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --remote-debugging-port=9222 \
   --user-data-dir=/tmp/chrome-dr \
   --no-first-run \
   --no-default-browser-check &
 
-# Open Terminal — auto-install deps if needed, then launch Claude Code
+# Fix 5: Notify designer what the new Chrome window is for
+sleep 1
+osascript -e 'display notification "A dedicated Chrome window just opened. You will be asked to navigate to your app page there during the review." with title "Design Review — Chrome Ready"'
+
+# Fix 2: Show sign-in guidance before claude launches, then start
 osascript <<APPLESCRIPT
 tell application "Terminal"
-  do script "cd '$PROJECT_DIR/_core' && ([ -d node_modules ] || npm install) && cd '$PROJECT_DIR' && claude ."
+  do script "cd '$PROJECT_DIR/_core' && ([ -d node_modules ] || npm install) && cd '$PROJECT_DIR' && echo '' && echo '─────────────────────────────────────────' && echo '  Design Review is starting...' && echo '  If asked to sign in to Claude, follow' && echo '  the prompts — it only takes a minute.' && echo '─────────────────────────────────────────' && echo '' && claude ."
   activate
 end tell
 APPLESCRIPT

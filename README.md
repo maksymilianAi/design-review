@@ -20,12 +20,10 @@ Design Review compares a Figma design frame against a live frontend page and pro
 
 | | |
 |---|---|
-| [Claude Code](https://claude.ai/code) | The AI assistant that runs the review |
 | [Figma Personal Access Token](https://www.figma.com/developers/api#authentication) | Lets the tool download your Figma designs |
+| [Google Chrome](https://www.google.com/chrome) | Recommended for best results — other browsers are not officially supported |
 
-**Node.js** is also required — the app will offer to install it automatically if it's missing.
-
-**Google Chrome** is strongly recommended. Other browsers are not officially supported and report quality is not guaranteed.
+Everything else (Node.js, Claude Code) is installed automatically on first launch.
 
 ---
 
@@ -35,25 +33,15 @@ Design Review compares a Figma design frame against a live frontend page and pro
 
 **[⬇ Download ZIP](https://github.com/maksymilianAi/design-review/archive/refs/heads/main.zip)**
 
-Unzip the folder anywhere on your Mac (Desktop, Documents, wherever you prefer).
+Unzip the folder anywhere on your Mac.
 
-### 2. Install and sign in to Claude Code
-
-Download Claude Code from [claude.ai/code](https://claude.ai/code) and follow the installation instructions. Then open Terminal and run:
-
-```bash
-claude
-```
-
-Follow the prompts to sign in. You only need to do this once.
-
-### 3. Open the app
+### 2. Open the app
 
 Double-click **`Design Review.app`** in Finder.
 
 > **First time only:** macOS may block the app with a security warning. Right-click the app → **Open** → **Open** to allow it.
 
-On first launch, a dialog will ask for your Figma API token. Paste it and click **Save** — it is stored securely in your macOS Keychain and never asked again.
+The app will automatically install any missing tools (Node.js, Claude Code) and ask for your Figma API token. Everything is set up for you — you just click through the prompts.
 
 ---
 
