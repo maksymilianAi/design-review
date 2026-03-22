@@ -141,7 +141,7 @@ After presenting the bug table, add a blank line, then ask exactly this as a sta
 
 > Proceed with these bugs? Type Y to generate the report · N to make changes
 
-- Y → ask once: "Would you like to add a Figma link to the report? (optional)" then execute immediately:
+- Y → use the Figma URL already provided at the start of the review — do not ask for it again. Execute immediately:
    - Get today's real date from browser console
    - For each bug: get bounding rect, take real screenshot crop from browser, crop matching area from Figma screenshot
    - Generate and write the complete HTML report in one single file operation

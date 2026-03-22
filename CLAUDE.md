@@ -17,7 +17,7 @@ When the user types "dr", or on startup:
 5. Read `screenshots/frontend-latest.png` and `screenshots/figma-latest.png`
 6. Perform the visual comparison per manifest rules
 7. Present bugs as a markdown table with columns: **#** | **Component** | **Property** | **Expected (Figma)** | **Actual (Frontend)**, then ask Y/N
-8. On Y: ask once for Figma link (already provided — confirm or use the same URL), then run `node _core/generate-report.js` via Bash
+8. On Y: use the Figma URL already provided at step 1 — do not ask for it again. Run `node _core/generate-report.js` via Bash
 9. Open the generated HTML file via Bash: `open ~/Desktop/design-review-*.html`
 
 ## Important
