@@ -1,6 +1,33 @@
 #!/bin/bash
 cd "$(dirname "$0")/../../../"
 
+ENV_FILE="config/.env"
+
+# Check if token is already saved
+TOKEN=$(grep "^FIGMA_TOKEN=" "$ENV_FILE" 2>/dev/null | cut -d= -f2)
+
+if [ -z "$TOKEN" ]; then
+  TOKEN=$(osascript <<'APPLESCRIPT'
+    set theResult to display dialog "Paste your Figma API token to get started:" \
+      default answer "" \
+      with title "Design Review — First Time Setup" \
+      buttons {"Cancel", "Save"} \
+      default button "Save"
+    return text returned of theResult
+APPLESCRIPT
+  )
+
+  if [ -z "$TOKEN" ]; then
+    exit 0
+  fi
+
+  mkdir -p config
+  echo "FIGMA_TOKEN=$TOKEN" > "$ENV_FILE"
+
+  osascript -e 'display notification "Token saved. You are ready to go!" with title "Design Review"'
+fi
+
+# Open Chrome with debug port (separate profile, existing Chrome stays open)
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --remote-debugging-port=9222 \
   --user-data-dir=/tmp/chrome-dr \

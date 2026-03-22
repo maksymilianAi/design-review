@@ -26,19 +26,41 @@ function httpsGet(url) {
   });
 }
 
-function figmaApiGet(path) {
+const ENV_PATH = path.join(__dirname, '../config/.env');
+
+function figmaApiGet(apiPath) {
   const token = process.env.FIGMA_TOKEN;
-  if (!token) throw new Error('FIGMA_TOKEN not set in .env');
+  if (!token) throw new Error('FIGMA_TOKEN not set');
   return new Promise((resolve, reject) => {
     https.get(
-      { hostname: 'api.figma.com', path, headers: { 'X-Figma-Token': token } },
+      { hostname: 'api.figma.com', path: apiPath, headers: { 'X-Figma-Token': token } },
       (res) => {
         const chunks = [];
         res.on('data', c => chunks.push(c));
-        res.on('end', () => resolve(JSON.parse(Buffer.concat(chunks).toString())));
+        res.on('end', () => resolve({ status: res.statusCode, data: JSON.parse(Buffer.concat(chunks).toString()) }));
       }
     ).on('error', reject);
   });
+}
+
+function askNewToken() {
+  const { execSync } = require('child_process');
+  const script = `
+    set t to text returned of (display dialog "Your Figma token is invalid or expired. Paste a new one:" ¬
+      default answer "" ¬
+      with title "Design Review — Token Expired" ¬
+      buttons {"Cancel", "Save"} default button "Save")
+    return t
+  `;
+  try {
+    const newToken = execSync(`osascript -e '${script.replace(/'/g, "'\"'\"'")}'`).toString().trim();
+    if (!newToken) return false;
+    require('fs').writeFileSync(ENV_PATH, `FIGMA_TOKEN=${newToken}\n`);
+    process.env.FIGMA_TOKEN = newToken;
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function parseFigmaUrl(url) {
@@ -57,7 +79,18 @@ async function downloadFigmaScreenshot(figmaUrl) {
   process.stdout.write('⬇️  Fetching Figma design... ');
   const { fileKey, nodeId } = parseFigmaUrl(figmaUrl);
 
-  const data = await figmaApiGet(`/v1/images/${fileKey}?ids=${encodeURIComponent(nodeId)}&format=png&scale=1`);
+  let response = await figmaApiGet(`/v1/images/${fileKey}?ids=${encodeURIComponent(nodeId)}&format=png&scale=1`);
+
+  // Handle expired / invalid token
+  if (response.status === 401 || response.status === 403 || response.data.status === 403) {
+    console.log('\n⚠️  Figma token is invalid or expired.');
+    const updated = askNewToken();
+    if (!updated) throw new Error('No new token provided. Cannot proceed.');
+    response = await figmaApiGet(`/v1/images/${fileKey}?ids=${encodeURIComponent(nodeId)}&format=png&scale=1`);
+    if (response.status === 401 || response.status === 403) throw new Error('New token is also invalid.');
+  }
+
+  const data = response.data;
   if (data.err) throw new Error(`Figma API: ${data.err}`);
 
   const imgUrl = Object.values(data.images)[0];
