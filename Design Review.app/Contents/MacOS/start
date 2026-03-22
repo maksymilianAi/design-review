@@ -2,6 +2,28 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../" && pwd)"
 
+# Extend PATH to cover common install locations for node and claude
+export PATH="/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node/ 2>/dev/null | sort -V | tail -1)/bin:$PATH"
+
+# ── Requirement checks ────────────────────────────────────────────────────────
+
+if ! /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version &>/dev/null; then
+  osascript -e 'display dialog "Google Chrome is not installed.\n\nDownload it from google.com/chrome and try again." with title "Design Review — Missing Requirement" buttons {"OK"} default button "OK"'
+  exit 1
+fi
+
+if ! command -v node &>/dev/null; then
+  osascript -e 'display dialog "Node.js is not installed.\n\nDownload the LTS version from nodejs.org and try again." with title "Design Review — Missing Requirement" buttons {"OK"} default button "OK"'
+  exit 1
+fi
+
+if ! command -v claude &>/dev/null; then
+  osascript -e 'display dialog "Claude Code is not installed.\n\nDownload it from claude.ai/code and try again." with title "Design Review — Missing Requirement" buttons {"OK"} default button "OK"'
+  exit 1
+fi
+
+# ─────────────────────────────────────────────────────────────────────────────
+
 # Read token from Keychain (no Documents folder permission needed)
 TOKEN=$(security find-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w 2>/dev/null)
 
@@ -34,10 +56,10 @@ fi
   --no-first-run \
   --no-default-browser-check &
 
-# Open Terminal with Claude Code running inside it
+# Open Terminal — auto-install deps if needed, then launch Claude Code
 osascript <<APPLESCRIPT
 tell application "Terminal"
-  do script "cd '$PROJECT_DIR' && claude ."
+  do script "cd '$PROJECT_DIR/_core' && ([ -d node_modules ] || npm install) && cd '$PROJECT_DIR' && claude ."
   activate
 end tell
 APPLESCRIPT

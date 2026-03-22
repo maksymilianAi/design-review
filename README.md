@@ -18,31 +18,46 @@ Design Review compares a Figma design frame against a live frontend page and pro
 
 ## Requirements
 
-- macOS
-- [Claude Code](https://claude.ai/code) installed
-- Google Chrome installed
-- A [Figma Personal Access Token](https://www.figma.com/developers/api#authentication)
+Before you start, make sure these are installed:
+
+| | |
+|---|---|
+| [Claude Code](https://claude.ai/code) | The AI assistant that runs the review |
+| [Node.js LTS](https://nodejs.org) | Required to run the tool scripts |
+| [Google Chrome](https://www.google.com/chrome) | Used to capture the frontend screenshot |
+| [Figma Personal Access Token](https://www.figma.com/developers/api#authentication) | Lets the tool download your Figma designs |
+
+If anything is missing, the app will tell you with a clear message when you launch it.
 
 ---
 
 ## Setup
 
-### 1. Clone the repository
+### 1. Download the project
+
+**[⬇ Download ZIP](https://github.com/maksymilianAi/design-review/archive/refs/heads/main.zip)**
+
+Unzip the folder anywhere on your Mac (Desktop, Documents, wherever you prefer).
+
+### 2. Install Node.js
+
+Download and install the LTS version from [nodejs.org](https://nodejs.org). This is required to run the tool — install it once and you're done.
+
+### 3. Install and sign in to Claude Code
+
+Download Claude Code from [claude.ai/code](https://claude.ai/code) and follow the installation instructions. Then open Terminal and run:
 
 ```bash
-git clone <your-repo-url>
-cd DR
+claude
 ```
 
-### 2. Install dependencies
+Follow the prompts to sign in. You only need to do this once.
 
-```bash
-cd _core && npm install && cd ..
-```
-
-### 3. Open the app
+### 4. Open the app
 
 Double-click **`Design Review.app`** in Finder.
+
+> **First time only:** macOS may block the app with a security warning. Right-click the app → **Open** → **Open** to allow it.
 
 On first launch, a dialog will ask for your Figma API token. Paste it and click **Save** — it is stored securely in your macOS Keychain and never asked again.
 
