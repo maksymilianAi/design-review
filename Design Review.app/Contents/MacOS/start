@@ -13,8 +13,16 @@ if ! /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version &>
 fi
 
 if ! command -v node &>/dev/null; then
-  osascript -e 'display dialog "Node.js is not installed.\n\nDownload the LTS version from nodejs.org and try again." with title "Design Review — Missing Requirement" buttons {"OK"} default button "OK"'
-  exit 1
+  INSTALL_NODE=$(osascript -e 'button returned of (display dialog "Node.js is not installed. It is required to run Design Review.\n\nWould you like to install it automatically?" with title "Design Review — Missing Requirement" buttons {"Cancel", "Install"} default button "Install")')
+  if [ "$INSTALL_NODE" = "Cancel" ]; then exit 0; fi
+  # Install via Homebrew (install Homebrew first if needed)
+  osascript <<APPLESCRIPT
+tell application "Terminal"
+  do script "(command -v brew &>/dev/null || /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\") && brew install node && echo '✅ Node.js installed. You can close this window and reopen Design Review.'"
+  activate
+end tell
+APPLESCRIPT
+  exit 0
 fi
 
 if ! command -v claude &>/dev/null; then

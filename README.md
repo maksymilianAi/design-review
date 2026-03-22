@@ -12,22 +12,20 @@
 
 ## What it does
 
-Design Review compares a Figma design frame against a live frontend page and produces a structured bug report. You provide a Figma URL, Claude does the comparison, and you get a polished HTML report saved to your Desktop — with side-by-side cropped screenshots of every bug.
+Design Review compares a Figma design frame against a live frontend page and produces a polished report with all found bugs — including side-by-side cropped screenshots of every discrepancy.
 
 ---
 
 ## Requirements
 
-Before you start, make sure these are installed:
-
 | | |
 |---|---|
 | [Claude Code](https://claude.ai/code) | The AI assistant that runs the review |
-| [Node.js LTS](https://nodejs.org) | Required to run the tool scripts |
-| [Google Chrome](https://www.google.com/chrome) | Used to capture the frontend screenshot |
 | [Figma Personal Access Token](https://www.figma.com/developers/api#authentication) | Lets the tool download your Figma designs |
 
-If anything is missing, the app will tell you with a clear message when you launch it.
+**Node.js** is also required — the app will offer to install it automatically if it's missing.
+
+**Google Chrome** is strongly recommended. Other browsers are not officially supported and report quality is not guaranteed.
 
 ---
 
@@ -39,11 +37,7 @@ If anything is missing, the app will tell you with a clear message when you laun
 
 Unzip the folder anywhere on your Mac (Desktop, Documents, wherever you prefer).
 
-### 2. Install Node.js
-
-Download and install the LTS version from [nodejs.org](https://nodejs.org). This is required to run the tool — install it once and you're done.
-
-### 3. Install and sign in to Claude Code
+### 2. Install and sign in to Claude Code
 
 Download Claude Code from [claude.ai/code](https://claude.ai/code) and follow the installation instructions. Then open Terminal and run:
 
@@ -53,7 +47,7 @@ claude
 
 Follow the prompts to sign in. You only need to do this once.
 
-### 4. Open the app
+### 3. Open the app
 
 Double-click **`Design Review.app`** in Finder.
 
@@ -69,21 +63,17 @@ On first launch, a dialog will ask for your Figma API token. Paste it and click 
 
 Double-click **`Design Review.app`**.
 
-This opens a dedicated Chrome window with remote debugging enabled, then launches Claude Code in the project directory.
+This opens a dedicated Chrome window and launches Claude Code.
 
 ### Step 2 — Paste the Figma URL
 
-Claude automatically starts the review flow and asks for the Figma URL of the design frame you want to compare. Copy the link from Figma (right-click a frame → **Copy link**) and paste it.
+Claude asks for the Figma URL of the design frame you want to compare. Copy the link from Figma (right-click a frame → **Copy link**) and paste it.
 
 ### Step 3 — Open the page in Chrome
 
-Claude will prompt you to navigate to the frontend page you want to review in the Chrome window. Once you're on the right page, type `go`.
+Claude prompts you to navigate to the frontend page you want to review. Once you're on the right page, type `go`.
 
-The tool will then:
-- Download the Figma design as a screenshot
-- Capture the frontend page at 1440px viewport width
-
-### Step 4 — Review the bug table
+### Step 4 — Review the bugs
 
 Claude presents a table of visual discrepancies — missing elements, wrong colors, text mismatches, spacing issues, and more.
 
@@ -91,14 +81,12 @@ Confirm with **Y** to generate the report, or **N** to make changes.
 
 ### Step 5 — Get the report
 
-The HTML report is saved to your **Desktop** and opens automatically. It contains:
+The HTML report opens automatically. It contains:
 
 - A summary of total bugs
 - Side-by-side cropped screenshots for each bug (Figma vs. Frontend)
 - A direct link to the Figma frame
 - Property details for each discrepancy
-
-Screenshots are deleted from the project folder after the report is generated.
 
 ---
 
@@ -111,9 +99,8 @@ DR/
 │   ├── dr.js                 # Takes screenshots, fetches Figma design
 │   ├── generate-report.js    # Generates the HTML bug report
 │   └── manifest.md           # All review rules and instructions
-├── config/
-│   └── .env                  # Stores your Figma token (gitignored)
-└── CLAUDE.md                 # Points Claude Code to manifest.md
+└── config/
+    └── .env                  # Stores your Figma token (gitignored)
 ```
 
 ---
