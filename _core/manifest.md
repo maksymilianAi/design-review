@@ -1,4 +1,4 @@
-# Design Review Manifest V4.0
+# Design Review Manifest V5.0
 
 ## About this file
 This file is the single source of truth for the Design Review tool. It contains both the operational flow and all review rules. Always follow these instructions exactly.
@@ -35,8 +35,9 @@ If the result is not 1440 — report it and stop.
 ---
 
 ## Step 0 — Before starting
-1. Read both screenshots: frontend (left) and Figma design (right)
-2. Begin analysis immediately — do not ask any questions
+1. Parse the Figma URL: extract `fileKey` and `nodeId` (convert `-` → `:` in nodeId). Store both for later use.
+2. Read both screenshots: frontend (left) and Figma design (right)
+3. Begin analysis immediately — do not ask any questions
 
 ---
 
@@ -63,7 +64,7 @@ If you catch yourself writing a dash, asterisk, or number at the start of a bug 
 - Do NOT ask for approval before proceeding
 - Do NOT show intermediate analysis, check results, or commentary — output the bug table only
 - Do NOT take any browser screenshots — they are provided automatically
-- Use DevTools only to verify exact values where a visual difference is already spotted — never proactively
+- When a visual difference is spotted: call `get_design_context(fileKey, nodeId)` with the component's nodeId first — it returns exact hex colors and px values from the design. Fall back to DevTools only for frontend-side values not available from the design context.
 - When DevTools is needed, batch ALL queries into a single JS call — never separate calls per element
 
 ---
@@ -125,10 +126,9 @@ For every visible element in each zone, check:
 Do not stop after finding a few bugs — complete all five zones before writing the bug table.
 If unsure whether something is dynamic — flag it in the table. Let the user decide.
 
-DevTools only when a visual difference is confirmed:
-- Exact color hex value
-- Line height
-- Exact margin, padding, or gap value
+When a visual difference is confirmed — get exact values in this order:
+1. Call `get_design_context(fileKey, nodeId)` with the component's nodeId → use the returned hex/px values as Expected
+2. DevTools for frontend-side values only (computed color, line-height, margin, padding, gap) — batch ALL queries into one JS call
 
 ---
 
@@ -160,7 +160,7 @@ After presenting the bug table, add a blank line, then ask exactly this — noth
 
 - Y → use the Figma URL already provided at the start of the review — do not ask for it again. Execute immediately:
    - Get today's real date from browser console
-   - For each bug: get bounding rect, take real screenshot crop from browser, crop matching area from Figma screenshot
+   - For each bug: get bounding rect, take real screenshot crop from browser; call `get_screenshot(fileKey, nodeId)` with the component's nodeId for the Figma-side image
    - Generate and write the complete HTML report in one single file operation
    - Respond with exactly one line: "Report generated: [filename]" — nothing else
 - N → wait for instructions, update the table, then ask Y/N again
@@ -218,8 +218,8 @@ Then: `cropW = (anchorX - cropX) * 2` so the anchor stays centered.
 **Step 4 — Take the frontend crop**
 The bug element must appear dead-center horizontally and vertically.
 
-**Step 5 — Match in the Figma screenshot**
-Find the same element in the Figma image. Apply the same anchor-point logic centered on that element.
+**Step 5 — Get the Figma-side image**
+Call `get_screenshot(fileKey, nodeId)` with the component's nodeId. Use the returned image directly as the design-side crop — no manual cropping of `figma-latest.png` needed.
 
 **Step 6 — Scale and validate**
 - Scale both to the same height (taller × zoom multiplier)
@@ -230,6 +230,7 @@ Find the same element in the Figma image. Apply the same anchor-point logic cent
 - Bug element is fully visible — nothing cut off
 - No sidebar pixels in either crop
 - Both crops show the same element
+- Figma crop came from `get_screenshot`, not from slicing `figma-latest.png`
 
 ---
 

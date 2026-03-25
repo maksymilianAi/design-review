@@ -17,69 +17,34 @@ const ZOOM = 2;
 
 // ─── Session config (update each run) ────────────────────────────────────────
 const FIGMA_LINK    = 'https://www.figma.com/design/i6FM9wHcXPNjV2W3rfd18r/PP-1?node-id=19890-236099&t=rNkksWZJyFwtTpNR-4';
-const DATE_ISO      = '2026-03-22';
-const DATE_DISPLAY  = 'March 22, 2026';
+const DATE_ISO      = '2026-03-25';
+const DATE_DISPLAY  = 'March 25, 2026';
 const FEATURE       = 'expense-details';
 const FEATURE_TITLE = 'Expense Details';
 
 const BUGS = [
-  { id: 1, component: 'Page header', property: 'Back button', expected: 'Present (← Back)', actual: 'Missing', elementKey: 'breadcrumb', severity: 'CRIT', paddingH: 120 },
-  { id: 2, component: 'Breadcrumb', property: 'Path text', expected: 'Elevate > Expense Details', actual: 'Home > Expense details', elementKey: 'breadcrumb', severity: 'Minor', paddingH: 120 },
-  { id: 3, component: 'Expense Breakdown', property: 'Legend labels', expected: 'Medical, Dental, Vision, Other (4 labels)', actual: 'Per Specific, Medical (2 labels, wrong names)', elementKey: 'expenseLegend', severity: 'CRIT' },
+  { id: 1, component: 'Page header', property: 'Back button', expected: 'Present (← Back link, #3f68ff)', actual: 'Missing entirely', elementKey: 'breadcrumb', severity: 'CRIT', paddingH: 120 },
+  { id: 2, component: 'Expenses section heading', property: 'Presence', expected: '"Expenses: 24" label above filter row', actual: 'Missing entirely', elementKey: 'filterRow', severity: 'CRIT', paddingH: 40 },
+  { id: 3, component: 'Table header', property: 'Provider column header', expected: '"Provider" (first column header)', actual: 'Missing — no Provider header', elementKey: 'tableHeader', severity: 'CRIT', paddingH: 40 },
+  { id: 4, component: 'Expense Breakdown', property: 'Total amount color', expected: '#0f1621 (dark)', actual: '#176AF6 (blue)', elementKey: 'totalAmount', severity: 'CRIT', paddingH: 60 },
 ];
 // ─────────────────────────────────────────────────────────────────────────────
 
 const QUERIES = {
-  // Breadcrumb: must be near top of page (y < 150) to avoid matching pagination
+  // Breadcrumb area at top of page
   breadcrumb: `(() => {
+    const el = document.querySelector('[data-testid="Breadcrumb-Home"]')?.closest('div[class]')?.parentElement;
+    if (el) { const r = el.getBoundingClientRect(); if (r.top < 150) return JSON.stringify(r.toJSON()); }
     const tries = ['[aria-label="breadcrumb"]', 'nav[aria-label]', '[class*="breadcrumb" i]', '[class*="Breadcrumb"]'];
     for (const s of tries) {
-      const el = document.querySelector(s);
-      if (el) {
-        const r = el.getBoundingClientRect();
-        if (r.width > 0 && r.height > 0 && r.height < 80 && r.top < 150) return JSON.stringify(r.toJSON());
-      }
+      const el2 = document.querySelector(s);
+      if (el2) { const r = el2.getBoundingClientRect(); if (r.width > 0 && r.height > 0 && r.height < 80 && r.top < 150) return JSON.stringify(r.toJSON()); }
     }
-    // Fallback: small element with "/" near the top of the page
-    const all = [...document.querySelectorAll('*')];
-    const match = all.find(el => {
-      const r = el.getBoundingClientRect();
-      return r.top > 0 && r.top < 150 && r.height > 0 && r.height < 60 && r.width > 100
-        && el.textContent.includes('/') && el.children.length < 8;
-    });
-    if (match) { const r = match.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
     return null;
   })()`,
 
-
-  // Expense Breakdown legend (colored dots + labels below the bar chart)
-  expenseLegend: `(() => {
-    const selectors = ['[class*="legend" i]', '[class*="Legend"]', '[class*="chart-legend" i]', '[class*="breakdown-legend" i]'];
-    for (const s of selectors) {
-      const el = document.querySelector(s);
-      if (el) { const r = el.getBoundingClientRect(); if (r.width > 100 && r.height > 0 && r.height < 80) return JSON.stringify(r.toJSON()); }
-    }
-    // Fallback: find element near top of page containing at least 2 dot-like children with text labels
-    const all = [...document.querySelectorAll('*')];
-    const match = all.find(el => {
-      const r = el.getBoundingClientRect();
-      const t = el.textContent;
-      return r.top > 80 && r.top < 400 && r.height > 0 && r.height < 60 && r.width > 100
-        && (t.includes('Medical') || t.includes('Dental') || t.includes('Per Specific'))
-        && el.children.length >= 2;
-    });
-    if (match) { const r = match.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
-    return null;
-  })()`,
-
-  // Filter toolbar row (search + status/category/period filters)
-  filterToolbar: `(() => {
-    const selectors = ['[class*="filter" i]', '[class*="toolbar" i]', '[class*="search-bar" i]', '[class*="table-filter" i]'];
-    for (const s of selectors) {
-      const el = document.querySelector(s);
-      if (el) { const r = el.getBoundingClientRect(); if (r.width > 300 && r.height > 0 && r.height < 100) return JSON.stringify(r.toJSON()); }
-    }
-    // Fallback: find element containing Status and Category filter labels
+  // Filter row (where Expenses heading should appear above it)
+  filterRow: `(() => {
     const all = [...document.querySelectorAll('*')];
     const match = all.find(el => {
       const t = el.textContent;
@@ -87,6 +52,26 @@ const QUERIES = {
       return t.includes('Status') && t.includes('Category') && r.width > 300 && r.height > 0 && r.height < 100 && el.children.length > 1;
     });
     if (match) { const r = match.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
+    return null;
+  })()`,
+
+  // Table header row
+  tableHeader: `(() => {
+    const requestedEl = [...document.querySelectorAll('*')].find(el =>
+      el.children.length === 0 && el.textContent.trim() === 'Requested amount'
+    );
+    const row = requestedEl?.closest('div[class]')?.parentElement;
+    if (row) { const r = row.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
+    return null;
+  })()`,
+
+  // Total amount in Expense Breakdown
+  totalAmount: `(() => {
+    const labelEl = [...document.querySelectorAll('*')].find(el =>
+      el.children.length === 0 && el.textContent.trim() === 'Total:'
+    );
+    const container = labelEl?.parentElement?.parentElement;
+    if (container) { const r = container.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
     return null;
   })()`,
 };
