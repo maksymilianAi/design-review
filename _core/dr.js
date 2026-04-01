@@ -175,10 +175,10 @@ async function run() {
     const { result: urlResult } = await Runtime.evaluate({ expression: 'location.href' });
     console.log(`📄 Page: ${urlResult.value}`);
 
-    const { contentSize } = await Page.getLayoutMetrics();
+    // First pass: set width and a tall viewport so the page renders at 1440px
     await Emulation.setDeviceMetricsOverride({
       width: TARGET_WIDTH,
-      height: Math.ceil(contentSize.height),
+      height: 900,
       deviceScaleFactor: 1,
       mobile: false,
     });
@@ -191,7 +191,25 @@ async function run() {
     }
     console.log(`✅ Viewport: ${actualWidth}px`);
 
-    const { data } = await Page.captureScreenshot({ format: 'png' });
+    // Second pass: expand viewport to full scroll height so captureScreenshot gets the whole page
+    const { result: scrollHeightResult } = await Runtime.evaluate({
+      expression: 'Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)',
+    });
+    const fullHeight = Math.ceil(scrollHeightResult.value);
+    await Emulation.setDeviceMetricsOverride({
+      width: TARGET_WIDTH,
+      height: fullHeight,
+      deviceScaleFactor: 1,
+      mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 300));
+    console.log(`✅ Full page height: ${fullHeight}px`);
+
+    const { data } = await Page.captureScreenshot({
+      format: 'png',
+      captureBeyondViewport: true,
+      clip: { x: 0, y: 0, width: TARGET_WIDTH, height: fullHeight, scale: 1 },
+    });
 
     if (!fs.existsSync(SCREENSHOTS_DIR)) fs.mkdirSync(SCREENSHOTS_DIR);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);

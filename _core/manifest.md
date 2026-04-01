@@ -13,6 +13,8 @@ On startup — immediately begin, do not show a generic greeting:
 2. Wait for the URL
 3. Ask: "Open the page you want to review in the Chrome window, then type 'go'."
 4. Wait for the user to reply "go"
+4a. Ask: "Anything specific to focus on or skip? (e.g. 'only check the header', 'skip the table') — or press Enter to review everything."
+Wait for the user's response. Store these as scope instructions and apply them during the comparison step.
 5. Run via Bash: `node _core/dr.js "<figma_url>"` — downloads the Figma design and captures the frontend screenshot
 6. Read `screenshots/frontend-latest.png` and `screenshots/figma-latest.png`
 7. Perform the visual comparison following all rules below
@@ -90,8 +92,6 @@ Rule: never skip an entire component because it contains dynamic data. Only skip
 ---
 
 ## Ignore completely
-- Top navigation header with logo and menu
-- Sidebar navigation
 - Sticky header on scrolled screenshots
 - Transparent backgrounds that visually match due to parent background
 - Claude plugin UI elements (e.g. "Claude is active in this tab group")
@@ -163,6 +163,8 @@ After presenting the bug table, add a blank line, then ask exactly this — noth
    - For each bug: get bounding rect, take real screenshot crop from browser; call `get_screenshot(fileKey, nodeId)` with the component's nodeId for the Figma-side image
    - Generate and write the complete HTML report in one single file operation
    - Respond with exactly one line: "Report generated: [filename]" — nothing else
+   - Then ask exactly: "Any crops to fix? Mention the bug number and which side (design or frontend)."
+   - Wait for the user's response. If they describe a bad crop — re-crop that side using the same anchor point method, replace the image in the HTML file, and respond: "Bug #N [side] updated." Then ask the same question again until the user says no.
 - N → wait for instructions, update the table, then ask Y/N again
 
 ---
@@ -186,9 +188,6 @@ Frontend crop and design crop must be scaled to the same pixel height.
 **Minimum height: 100px.**
 Thin elements (breadcrumb bars, single-line labels) must be scaled up to meet this minimum.
 
-**Exclude the sidebar.**
-Never include the sidebar in any crop.
-
 **Zoom level: 2× default, 3× for small/thin elements.**
 
 **Before taking any screenshot: close DevTools completely.**
@@ -211,9 +210,8 @@ const anchorY = r.top + r.height / 2;
 - `cropX = anchorX - cropW / 2`
 - `cropY = anchorY - cropH / 2`
 
-**Step 3 — Strip the sidebar**
-If `cropX` falls inside the sidebar: `cropX = sidebarRightEdge + 8`
-Then: `cropW = (anchorX - cropX) * 2` so the anchor stays centered.
+**Step 3 — Clamp to page bounds**
+If `cropX < 0`: set `cropX = 0`, then `cropW = anchorX * 2` so the anchor stays centered.
 
 **Step 4 — Take the frontend crop**
 The bug element must appear dead-center horizontally and vertically.
@@ -228,7 +226,6 @@ Call `get_screenshot(fileKey, nodeId)` with the component's nodeId. Use the retu
 ### Before embedding — verify:
 - Bug element is centered in both crops
 - Bug element is fully visible — nothing cut off
-- No sidebar pixels in either crop
 - Both crops show the same element
 - Figma crop came from `get_screenshot`, not from slicing `figma-latest.png`
 
