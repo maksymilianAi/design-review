@@ -46,13 +46,12 @@ Double-click **`Design Review.app`**.
 > [!WARNING]
 > **First time only — macOS security prompt**
 >
-> macOS may block the app with _"cannot be opened because the developer cannot be verified"_.
-> **Do not click Move to Bin.** Click **Cancel**, then:
+> Do not double-click the app. Instead:
 >
-> 1. Right-click `Design Review.app` in Finder → **Open**
+> 1. **Right-click** `Design Review.app` in Finder → **Open**
 > 2. Click **Open** again in the dialog that appears
 >
-> You only need to do this once. After that, the app opens normally.
+> Double-clicking will show a warning every time without a way through — right-click → Open is the only way to approve it. You only need to do this once.
 >
 ### 4. Switch to the Code tab
 
@@ -244,7 +243,7 @@ chmod +x "Design Review.app/Contents/MacOS/start"
 Open Claude Code → Settings → Connectors → find **Figma** → reconnect. The connection occasionally expires.
 
 **macOS blocked the app — "developer cannot be verified"**
-macOS Gatekeeper blocks apps downloaded from the internet that aren't signed with an Apple developer certificate. Click **Cancel** on the warning dialog (not Move to Bin), then right-click the app in Finder → **Open** → **Open**. Required once after download.
+Do not double-click — clicking Cancel on that dialog does not approve the app, and the warning will appear every time. Instead: right-click `Design Review.app` in Finder → **Open** → **Open**. Required once after download.
 
 **Chrome window closed accidentally**
 Relaunch `Design Review.app` — it kills the stale Chrome process and opens a fresh one.
