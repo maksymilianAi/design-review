@@ -30,7 +30,7 @@ Download and install from [claude.ai/download](https://claude.ai/download).
 
 ### 2. Connect Figma to Claude
 
-Open the Claude Code app → Settings → Connectors → **Figma** → Connect.
+Open the Claude Code app → Settings → Connectors → **Browse Connectors** → find **Figma** → Install.
 
 > You only need to do this once per account.
 
@@ -159,7 +159,7 @@ npm run report
 <br>
 
 **"Figma is not connected"**
-Open Claude Code → Settings → Connectors → Figma → reconnect. The connection occasionally expires.
+Open Claude Code → Settings → Connectors → find **Figma** → reconnect. The connection occasionally expires.
 
 **macOS blocked the app**
 Right-click `Design Review.app` → Open → Open. Required once after download.

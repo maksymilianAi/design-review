@@ -16,8 +16,8 @@ On startup — immediately begin, do not show a generic greeting:
 **Figma is not connected to Claude.**
 
 To fix this:
-1. Go to **claude.ai** → your profile icon → **Settings** → **Connectors**
-2. Find **Figma** and click **Connect**
+1. Go to **claude.ai** → your profile icon → **Settings** → **Connectors** → **Browse Connectors**
+2. Find **Figma** and click **Install**
 3. Authorize in the Figma dialog that opens
 4. Restart Design Review
 
