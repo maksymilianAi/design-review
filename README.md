@@ -60,6 +60,8 @@ Double-click **`Design Review.app`**.
 
 ---
 
+## Project documentation
+
 <details>
 <summary><strong>How it works</strong></summary>
 
@@ -68,12 +70,37 @@ Double-click **`Design Review.app`**.
 Design Review connects three systems: a live browser tab (via Chrome DevTools Protocol), a Figma file (via Figma MCP), and Claude Code as the AI reasoning layer. Everything runs locally — no backend, no cloud.
 
 **Flow:**
-1. `node dr.js` captures a full-page screenshot of the Chrome tab via CDP
-2. Figma MCP (`get_screenshot`) fetches the design frame directly from your Figma account
-3. Claude compares both images and produces a bug table
-4. `node dr-crop.js` crops each bug area from the frontend screenshot
-5. `get_screenshot` fetches the matching Figma crop for each bug
-6. `node generate-report.js` assembles a self-contained HTML report with all images embedded as base64
+
+```
+User                  Claude Code            Chrome (CDP)        Figma MCP
+ │                        │                      │                   │
+ │── paste Figma URL ────▶│                      │                   │
+ │── type "go" ──────────▶│                      │                   │
+ │                        │── node dr.js ────────▶│                   │
+ │                        │                      │ capture screenshot│
+ │                        │◀── frontend-latest.png│                   │
+ │                        │                      │                   │
+ │                        │── get_screenshot ─────────────────────────▶│
+ │                        │◀── design image ──────────────────────────│
+ │                        │                      │                   │
+ │                        │  [visual comparison] │                   │
+ │                        │                      │                   │
+ │                        │── node dr-crop.js ───▶│                   │
+ │                        │◀── fe_bugN.png ───────│                   │
+ │                        │── get_screenshot ─────────────────────────▶│
+ │                        │◀── fig_bugN.png ──────────────────────────│
+ │                        │                      │                   │
+ │                        │── node generate-report.js                 │
+ │◀── design-review.html ─│                      │                   │
+```
+
+**Key design decisions:**
+
+- **Screenshot before evaluate** — on React/Vue SPAs, any `Runtime.evaluate` call triggers data re-fetching and shows a loading spinner. `dr.js` takes the screenshot first, before touching the DOM.
+- **Scroll+stitch fallback** — if the instant screenshot doesn't capture the full page height, the script scrolls in viewport increments, captures slices, and composites them with `sharp`.
+- **Separate Chrome profile** — Chrome runs with `--user-data-dir=~/.chrome-dr`, separate from the user's main Chrome. Cookies and cache persist between sessions, making subsequent launches faster.
+- **Figma via MCP** — no API tokens required. Figma access goes through the user's Claude account (OAuth), so nothing sensitive is stored in the project.
+- **`bugs.json` as interface** — Claude writes bug metadata to `screenshots/bugs.json` before report generation. This decouples Claude's analysis from the report builder and makes the format explicit.
 
 </details>
 
@@ -92,10 +119,6 @@ DR/
 │   ├── generate-report.js    — builds the HTML bug report
 │   ├── manifest.md           — review process and rules for Claude
 │   └── manifest-rules.md     — design rules (capitalisation, labels, what to skip)
-├── docs/
-│   ├── ARCHITECTURE.md       — system design, data flow, security notes
-│   ├── SCRIPTS.md            — full scripts reference with examples
-│   └── CONTRIBUTING.md       — dev setup and how to extend the project
 └── config/                   — local config (gitignored)
 ```
 
@@ -138,6 +161,8 @@ node _core/dr-crop.js "CSS_SELECTOR" output-name [zoom]
 # Output: _core/screenshots/crops/output-name.png
 ```
 
+Crop formula: `width = max(element.width + 500, 700)` · `height = max(element.height + 200, 220)`. Default zoom 2×, use 3× for thin elements.
+
 **`dr-audit.js`** — structured DOM audit → JSON
 ```bash
 node _core/dr-audit.js --pretty
@@ -162,6 +187,43 @@ npm run report
 </details>
 
 <details>
+<summary><strong>Contributing</strong></summary>
+
+<br>
+
+**Local setup:**
+```bash
+git clone <repo>
+cd DR/_core
+npm install
+```
+
+Launch Chrome for local testing:
+```bash
+npm run chrome
+```
+
+**Modifying scripts** — all scripts use CommonJS (`require`). No build step.
+
+Key dependencies: `chrome-remote-interface` (CDP client) · `sharp` (image processing).
+
+When modifying `dr.js` — the screenshot must come before any `Runtime.evaluate` or `Emulation` call. Any evaluation before the screenshot triggers SPA re-renders.
+
+When modifying `dr-audit.js` — the `AUDIT_SCRIPT` string runs inside the browser via `Runtime.evaluate`. It cannot use Node.js APIs (`fs`, `path`, `require`). Only browser APIs are available.
+
+**Adding a new script:**
+1. Create `_core/your-script.js`
+2. Add an entry to `_core/package.json` under `scripts`
+3. If Claude should use it during reviews, reference it in `_core/manifest.md`
+
+**Modifying the launcher** — after editing `Design Review.app/Contents/MacOS/start`, make sure it stays executable:
+```bash
+chmod +x "Design Review.app/Contents/MacOS/start"
+```
+
+</details>
+
+<details>
 <summary><strong>Troubleshooting</strong></summary>
 
 <br>
@@ -170,7 +232,7 @@ npm run report
 Open Claude Code → Settings → Connectors → find **Figma** → reconnect. The connection occasionally expires.
 
 **macOS blocked the app**
-Right-click `Design Review.app` → Open → Open. Required once after download.
+Run `xattr -cr "Design Review.app"` in Terminal, then double-click normally.
 
 **Chrome window closed accidentally**
 Relaunch `Design Review.app` — it kills the stale Chrome process and opens a fresh one.
