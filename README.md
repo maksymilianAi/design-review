@@ -17,8 +17,9 @@
 | **Claude Code desktop app** | [claude.ai/download](https://claude.ai/download) |
 | **Google Chrome** | Used to capture frontend screenshots via CDP |
 | **Figma connected to Claude** | One-time setup — see below |
+| **Git** | Pre-installed on macOS |
 
-Node.js is installed automatically on first launch if missing.
+Node.js is installed automatically on first run if missing.
 
 ---
 
@@ -37,25 +38,19 @@ Open the Claude Code app → Settings → Connectors → **Browse Connectors** �
 
 You only need to do this once per account.
 
-### 3. Download and open
+### 3. Open the Code tab
 
-**[⬇ Download ZIP](https://github.com/maksymilianAi/design-review/archive/refs/heads/main.zip)** — unzip anywhere on your Mac.
+Launch Claude Code and click the **Code** tab at the top of the window.
 
-Double-click **`Design Review.app`**.
+### 4. Paste the setup command
 
-> [!WARNING]
-> **First time only — macOS security prompt**
->
-> Do not double-click the app. Instead:
->
-> 1. **Right-click** `Design Review.app` in Finder → **Open**
-> 2. Click **Open** again in the dialog that appears
->
-> Double-clicking will show a warning every time without a way through — right-click → Open is the only way to approve it. You only need to do this once.
->
-### 4. Start the review
+Copy the line below and paste it into the Claude chat:
 
-Switch to the **Code tab** in Claude, type `start`, and press Enter. Claude will begin immediately.
+```
+Set up and run Design Review: clone or update https://github.com/maksymilianAi/design-review to ~/design-review, install npm dependencies in ~/design-review/_core if needed, then read and follow ~/design-review/_core/manifest.md
+```
+
+Claude will clone the repo, install dependencies, launch Chrome, and start the review automatically. No downloads, no installers.
 
 ### 5. Run a review
 
@@ -238,14 +233,11 @@ chmod +x "Design Review.app/Contents/MacOS/start"
 **"Figma is not connected"**
 Open Claude Code → Settings → Connectors → find **Figma** → reconnect. The connection occasionally expires.
 
-**macOS blocked the app — "developer cannot be verified"**
-Do not double-click — clicking Cancel on that dialog does not approve the app, and the warning will appear every time. Instead: right-click `Design Review.app` in Finder → **Open** → **Open**. Required once after download.
-
 **Chrome window closed accidentally**
-Relaunch `Design Review.app` — it kills the stale Chrome process and opens a fresh one.
+Paste the setup command again — Claude will relaunch Chrome and resume.
 
 **Node.js not found**
-The app offers to install it automatically. If you prefer manual: `brew install node` (requires [Homebrew](https://brew.sh)).
+Install manually: `brew install node` (requires [Homebrew](https://brew.sh)).
 
 **Report has no images**
 Claude writes `screenshots/bugs.json` and the crop files before calling `generate-report.js`. If the report is empty, the session likely ended before crops were taken — restart the review.

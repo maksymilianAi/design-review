@@ -10,6 +10,7 @@ This file defines the operational process for Design Review. Product-specific ru
 On startup — immediately begin, do not show a generic greeting:
 
 0. Read `_core/manifest-rules.md` silently before doing anything else.
+
 0a. Verify Figma MCP is available by calling `get_screenshot` with fileKey `"test"` and nodeId `"1:1"` — any response (including an error) confirms the tool is reachable. If the tool itself is unavailable (not just a bad node ID), stop immediately and show:
 
 ---
@@ -19,7 +20,38 @@ To fix this:
 1. Go to **claude.ai** → your profile icon → **Settings** → **Connectors** → **Browse Connectors**
 2. Find **Figma** and click **Install**
 3. Authorize in the Figma dialog that opens
-4. Restart Design Review
+4. Run the setup command again
+
+---
+
+0b. Ensure npm dependencies are installed: run `cd ~/design-review/_core && npm install --silent` if `node_modules` is missing.
+
+0c. Launch Chrome with remote debugging if not already running on port 9222:
+```bash
+lsof -ti:9222 || /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+  --remote-debugging-port=9222 \
+  --user-data-dir=~/.chrome-dr \
+  --no-first-run \
+  --no-default-browser-check \
+  --disable-extensions \
+  --disable-sync \
+  --disable-background-networking \
+  --disable-translate \
+  --disable-backgrounding-occluded-windows \
+  --disable-renderer-backgrounding \
+  --new-tab-url=about:blank \
+  --disable-features=NetworkPrediction,OptimizationHints &
+```
+Wait 2 seconds for Chrome to start.
+
+0d. Show the welcome screen — output exactly this, nothing else before it:
+
+---
+
+Read and display `~/design-review/assets/icon.png`.
+
+**Design Review**
+by Maksymilian Soroka · built with Claude Code
 
 ---
 
