@@ -44,7 +44,7 @@ fi
 # ── 5. Figma connected? (first run reminder) ──────────────────────────────────
 FIGMA_CHECK="$CHROME_PROFILE/.figma-connected"
 if [ ! -f "$FIGMA_CHECK" ]; then
-  RESPONSE=$(osascript -e 'button returned of (display dialog "Before your first review — connect Figma to Claude.\n\nIn Claude: Code tab → Settings → Integrations → Figma → Connect\n\nAlready done? Click Continue." with title "Design Review — Figma Setup" buttons {"Open Claude", "Continue"} default button "Continue")')
+  RESPONSE=$(osascript -e 'button returned of (display dialog "Before your first review — connect Figma to Claude.\n\nIn Claude: Code tab → Settings → Connectors → Figma → Connect\n\nAlready done? Click Continue." with title "Design Review — Figma Setup" buttons {"Open Claude", "Continue"} default button "Continue")')
   if [ "$RESPONSE" = "Open Claude" ]; then
     open -a "Claude"
     exit 0
