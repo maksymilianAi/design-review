@@ -82,10 +82,8 @@ fi
   --new-tab-url=about:blank \
   --disable-features=NetworkPrediction,OptimizationHints &
 
-# ── 10. Launch Claude Code with initial prompt ────────────────────────────────
-osascript <<APPLESCRIPT
-tell application "Terminal"
-  do script "cd \"$PROJECT_DIR\" && claude 'start'"
-  activate
-end tell
-APPLESCRIPT
+# ── 10. Open Claude.app with project directory ────────────────────────────────
+open -a "Claude" "$PROJECT_DIR"
+
+sleep 1
+osascript -e 'display dialog "Chrome is ready.\n\n1. Switch to the Code tab in Claude\n2. Type  start  and press Enter\n\nClaude will begin the review." with title "Design Review" buttons {"Got it"} default button "Got it"'

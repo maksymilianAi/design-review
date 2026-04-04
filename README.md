@@ -53,7 +53,11 @@ Double-click **`Design Review.app`**.
 >
 > Double-clicking will show a warning every time without a way through — right-click → Open is the only way to approve it. You only need to do this once.
 >
-### 4. Run a review
+### 4. Start the review
+
+Switch to the **Code tab** in Claude, type `start`, and press Enter. Claude will begin immediately.
+
+### 5. Run a review
 
 1. Paste the Figma URL when Claude asks
 2. Open the page in the Chrome window that launched
