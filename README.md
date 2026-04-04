@@ -47,7 +47,11 @@ Double-click **`Design Review.app`**.
 
 ### 4. Switch to the Code tab
 
-In Claude, click the **Code** tab at the top. Design Review is already loaded — Claude will greet you automatically.
+> [!IMPORTANT]
+> After the app launches, Claude opens but stays on the Chat or Cowork tab.
+> **Click the Code tab at the top of the Claude window** — Design Review is already loaded and Claude will start automatically.
+
+The app shows a reminder dialog with a "Got it" button — that's your cue to switch.
 
 ### 5. Run a review
 
