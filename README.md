@@ -10,100 +10,170 @@
 
 ---
 
-## What it does
-
-Design Review compares a Figma design frame against a live frontend page and produces a polished report with all found bugs — including side-by-side cropped screenshots of every discrepancy.
-
----
-
 ## Requirements
 
 | | |
 |---|---|
-| [Figma Personal Access Token](https://www.figma.com/developers/api#authentication) | Lets the tool download your Figma designs |
-| [Google Chrome](https://www.google.com/chrome) | Recommended for best results — other browsers are not officially supported |
+| **Claude Code desktop app** | [claude.ai/download](https://claude.ai/download) |
+| **Google Chrome** | Used to capture frontend screenshots via CDP |
+| **Figma connected to Claude** | One-time setup — see below |
 
-Everything else (Node.js, Claude Code) is installed automatically on first launch.
-
----
-
-## Setup
-
-### 1. Download the project
-
-**[⬇ Download ZIP](https://github.com/maksymilianAi/design-review/archive/refs/heads/main.zip)**
-
-Unzip the folder anywhere on your Mac.
-
-### 2. Open the app
-
-Double-click **`Design Review.app`** in Finder.
-
-> **First time only:** macOS may block the app with a security warning. Right-click the app → **Open** → **Open** to allow it.
-
-The app will automatically install any missing tools (Node.js, Claude Code) and ask for your Figma API token. Everything is set up for you — you just click through the prompts.
+Node.js is installed automatically on first launch if missing.
 
 ---
 
-## Running a design review
+## Quick start
 
-### Step 1 — Launch the app
+### 1. Install Claude Code
+
+Download and install from [claude.ai/download](https://claude.ai/download).
+
+### 2. Connect Figma to Claude
+
+Open the Claude Code app → Settings → Integrations → **Figma** → Connect.
+
+> You only need to do this once per account.
+
+### 3. Download and open
+
+**[⬇ Download ZIP](https://github.com/maksymilianAi/design-review/archive/refs/heads/main.zip)** — unzip anywhere on your Mac.
 
 Double-click **`Design Review.app`**.
 
-This opens a dedicated Chrome window and launches Claude Code.
+> First time: macOS may block it. Right-click → **Open** → **Open**.
 
-### Step 2 — Paste the Figma URL
+### 4. Run a review
 
-Claude asks for the Figma URL of the design frame you want to compare. Copy the link from Figma (right-click a frame → **Copy link**) and paste it.
-
-### Step 3 — Open the page in Chrome
-
-Claude prompts you to navigate to the frontend page you want to review. Once you're on the right page, type `go`.
-
-### Step 4 — Review the bugs
-
-Claude presents a table of visual discrepancies — missing elements, wrong colors, text mismatches, spacing issues, and more.
-
-Confirm with **Y** to generate the report, or **N** to make changes.
-
-### Step 5 — Get the report
-
-The HTML report opens automatically. It contains:
-
-- A summary of total bugs
-- Side-by-side cropped screenshots for each bug (Figma vs. Frontend)
-- A direct link to the Figma frame
-- Property details for each discrepancy
+1. Paste the Figma URL when Claude asks
+2. Open the page in the Chrome window that launched
+3. Type `go` in the Claude chat
+4. Review the bug table → confirm with **Y**
+5. The HTML report opens on your Desktop
 
 ---
 
-## Project structure
+<details>
+<summary><strong>How it works</strong></summary>
+
+<br>
+
+Design Review connects three systems: a live browser tab (via Chrome DevTools Protocol), a Figma file (via Figma MCP), and Claude Code as the AI reasoning layer. Everything runs locally — no backend, no cloud.
+
+**Flow:**
+1. `node dr.js` captures a full-page screenshot of the Chrome tab via CDP
+2. Figma MCP (`get_screenshot`) fetches the design frame directly from your Figma account
+3. Claude compares both images and produces a bug table
+4. `node dr-crop.js` crops each bug area from the frontend screenshot
+5. `get_screenshot` fetches the matching Figma crop for each bug
+6. `node generate-report.js` assembles a self-contained HTML report with all images embedded as base64
+
+</details>
+
+<details>
+<summary><strong>Project structure</strong></summary>
+
+<br>
 
 ```
 DR/
-├── Design Review.app/        # macOS app bundle — double-click to start
+├── Design Review.app/        — double-click to launch
 ├── _core/
-│   ├── dr.js                 # Takes screenshots, fetches Figma design
-│   ├── generate-report.js    # Generates the HTML bug report
-│   └── manifest.md           # All review rules and instructions
-└── config/
-    └── .env                  # Stores your Figma token (gitignored)
+│   ├── dr.js                 — captures frontend screenshot via CDP
+│   ├── dr-crop.js            — crops a page element by CSS selector
+│   ├── dr-audit.js           — structured DOM audit (labels, headings, nav, borders)
+│   ├── generate-report.js    — builds the HTML bug report
+│   ├── manifest.md           — review process and rules for Claude
+│   └── manifest-rules.md     — design rules (capitalisation, labels, what to skip)
+├── docs/
+│   ├── ARCHITECTURE.md       — system design, data flow, security notes
+│   ├── SCRIPTS.md            — full scripts reference with examples
+│   └── CONTRIBUTING.md       — dev setup and how to extend the project
+└── config/                   — local config (gitignored)
 ```
 
----
+</details>
 
-## Figma token
+<details>
+<summary><strong>Customising the review</strong></summary>
 
-Your token is stored securely in the macOS Keychain. If it expires or becomes invalid, a native macOS dialog will prompt you to paste a new one — it is updated automatically.
+<br>
 
-To generate a token: Figma → Settings → Security → **Personal access tokens**.
+**`_core/manifest-rules.md`** — add product-specific rules without touching the core process:
+- Capitalisation exceptions
+- Components or sections to skip
+- Label/value pair behaviour
+- What counts as a bug vs. expected difference
 
----
+**`_core/manifest.md`** — the core review flow (zones, screenshot algorithm, report format). Edit this to change how Claude runs the review itself.
 
-## Review rules
+To add a rules file for a specific product: create `_core/manifest-rules-productname.md`. It is picked up automatically.
 
-All review rules — what to check, what to ignore, how bugs are reported, and how the HTML report is structured — live in `_core/manifest.md`. Edit that file to customize the review behavior.
+</details>
+
+<details>
+<summary><strong>Scripts reference</strong></summary>
+
+<br>
+
+All scripts are in `_core/`. Run from the project root.
+
+**`dr.js`** — full-page frontend screenshot via CDP
+```bash
+node _core/dr.js
+# Output: _core/screenshots/frontend-latest.png
+```
+
+**`dr-crop.js`** — crop a page element by CSS selector
+```bash
+node _core/dr-crop.js "CSS_SELECTOR" output-name [zoom]
+# Example: node _core/dr-crop.js ".page-header" fe_bug1 2
+# Output: _core/screenshots/crops/output-name.png
+```
+
+**`dr-audit.js`** — structured DOM audit → JSON
+```bash
+node _core/dr-audit.js --pretty
+# Returns: sections, fieldLabels, navigation, borders with exact computed values
+```
+
+**`generate-report.js`** — build the HTML report
+```bash
+node _core/generate-report.js [feature-name]
+# Reads: screenshots/bugs.json + crops/fe_bugN.png + crops/fig_bugN.png
+# Output: ~/Desktop/design-review-[feature-name]-YYYY-MM-DD.html
+```
+
+npm shortcuts:
+```bash
+npm run screenshot
+npm run crop -- ".selector" fe_bug1
+npm run audit
+npm run report
+```
+
+</details>
+
+<details>
+<summary><strong>Troubleshooting</strong></summary>
+
+<br>
+
+**"Figma is not connected"**
+Open Claude Code → Settings → Integrations → Figma → reconnect. The connection occasionally expires.
+
+**macOS blocked the app**
+Right-click `Design Review.app` → Open → Open. Required once after download.
+
+**Chrome window closed accidentally**
+Relaunch `Design Review.app` — it kills the stale Chrome process and opens a fresh one.
+
+**Node.js not found**
+The app offers to install it automatically. If you prefer manual: `brew install node` (requires [Homebrew](https://brew.sh)).
+
+**Report has no images**
+Claude writes `screenshots/bugs.json` and the crop files before calling `generate-report.js`. If the report is empty, the session likely ended before crops were taken — restart the review.
+
+</details>
 
 ---
 

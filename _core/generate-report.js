@@ -1,240 +1,197 @@
 #!/usr/bin/env node
+// Generates the HTML design review report from pre-saved crop images.
+//
+// Expected files in screenshots/crops/ before running:
+//   fe_bug1.png  …  fe_bugN.png    — frontend crops (taken by Claude via dr-crop.js)
+//   fig_bug1.png …  fig_bugN.png   — Figma crops (saved by Claude via get_screenshot MCP)
+//
+// Bug metadata is passed as a JSON file: screenshots/bugs.json
+// Format:
+// [
+//   { "num": 1, "component": "...", "property": "...", "expected": "...", "actual": "...", "severity": "CRIT|Minor" },
+//   ...
+// ]
+//
+// Usage: node generate-report.js [feature-name]
+// Output: ~/Desktop/design-review-[feature-name]-YYYY-MM-DD.html
+'use strict';
 
-const CDP = require('chrome-remote-interface');
-const sharp = require('sharp');
-const fs = require('fs');
+const fs   = require('fs');
 const path = require('path');
+const sharp = require('sharp');
 
-const os = require('os');
-const FIGMA_PATH  = path.join(__dirname, 'screenshots/figma-latest.png');
-const FRONTEND_PATH = path.join(__dirname, 'screenshots/frontend-latest.png');
-const SCREENSHOTS_DIR = path.join(__dirname, 'screenshots');
-const OUTPUT_DIR  = path.join(os.homedir(), 'Desktop');
-const DESIGN_VIEWPORT = 1440;
-const PADDING_H = 16;
-const PADDING_V = 10;
-const ZOOM = 2;
+const CROPS_DIR  = path.join(__dirname, 'screenshots', 'crops');
+const BUGS_PATH  = path.join(__dirname, 'screenshots', 'bugs.json');
+const featureName = (process.argv[2] || 'review').toLowerCase().replace(/\s+/g, '-');
 
-// ─── Session config (update each run) ────────────────────────────────────────
-const FIGMA_LINK    = 'https://www.figma.com/design/i6FM9wHcXPNjV2W3rfd18r/PP-1?node-id=19890-236099&t=rNkksWZJyFwtTpNR-4';
-const DATE_ISO      = '2026-03-25';
-const DATE_DISPLAY  = 'March 25, 2026';
-const FEATURE       = 'expense-details';
-const FEATURE_TITLE = 'Expense Details';
+// ── Date ─────────────────────────────────────────────────────────────────────
+const today = new Date();
+const dateISO    = today.toISOString().slice(0, 10);                          // 2026-04-04
+const dateHuman  = today.toLocaleDateString('en-US', {                        // April 04, 2026
+  year: 'numeric', month: 'long', day: '2-digit',
+});
 
-const BUGS = [
-  { id: 1, component: 'Page header', property: 'Back button', expected: 'Present (← Back link, #3f68ff)', actual: 'Missing entirely', elementKey: 'breadcrumb', severity: 'CRIT', paddingH: 120 },
-  { id: 2, component: 'Expenses section heading', property: 'Presence', expected: '"Expenses: 24" label above filter row', actual: 'Missing entirely', elementKey: 'filterRow', severity: 'CRIT', paddingH: 40 },
-  { id: 3, component: 'Table header', property: 'Provider column header', expected: '"Provider" (first column header)', actual: 'Missing — no Provider header', elementKey: 'tableHeader', severity: 'CRIT', paddingH: 40 },
-  { id: 4, component: 'Expense Breakdown', property: 'Total amount color', expected: '#0f1621 (dark)', actual: '#176AF6 (blue)', elementKey: 'totalAmount', severity: 'CRIT', paddingH: 60 },
-];
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const toB64 = buf => `data:image/png;base64,${buf.toString('base64')}`;
 
-const QUERIES = {
-  // Breadcrumb area at top of page
-  breadcrumb: `(() => {
-    const el = document.querySelector('[data-testid="Breadcrumb-Home"]')?.closest('div[class]')?.parentElement;
-    if (el) { const r = el.getBoundingClientRect(); if (r.top < 150) return JSON.stringify(r.toJSON()); }
-    const tries = ['[aria-label="breadcrumb"]', 'nav[aria-label]', '[class*="breadcrumb" i]', '[class*="Breadcrumb"]'];
-    for (const s of tries) {
-      const el2 = document.querySelector(s);
-      if (el2) { const r = el2.getBoundingClientRect(); if (r.width > 0 && r.height > 0 && r.height < 80 && r.top < 150) return JSON.stringify(r.toJSON()); }
-    }
-    return null;
-  })()`,
-
-  // Filter row (where Expenses heading should appear above it)
-  filterRow: `(() => {
-    const all = [...document.querySelectorAll('*')];
-    const match = all.find(el => {
-      const t = el.textContent;
-      const r = el.getBoundingClientRect();
-      return t.includes('Status') && t.includes('Category') && r.width > 300 && r.height > 0 && r.height < 100 && el.children.length > 1;
-    });
-    if (match) { const r = match.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
-    return null;
-  })()`,
-
-  // Table header row
-  tableHeader: `(() => {
-    const requestedEl = [...document.querySelectorAll('*')].find(el =>
-      el.children.length === 0 && el.textContent.trim() === 'Requested amount'
-    );
-    const row = requestedEl?.closest('div[class]')?.parentElement;
-    if (row) { const r = row.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
-    return null;
-  })()`,
-
-  // Total amount in Expense Breakdown
-  totalAmount: `(() => {
-    const labelEl = [...document.querySelectorAll('*')].find(el =>
-      el.children.length === 0 && el.textContent.trim() === 'Total:'
-    );
-    const container = labelEl?.parentElement?.parentElement;
-    if (container) { const r = container.getBoundingClientRect(); return JSON.stringify(r.toJSON()); }
-    return null;
-  })()`,
-};
-
-function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
-
-async function cropImage(srcPath, rect, imgW, imgH, scale = 1, padH = PADDING_H) {
-  const l = clamp(Math.round((rect.left - padH) * scale), 0, imgW - 2);
-  const t = clamp(Math.round((rect.top  - PADDING_V) * scale), 0, imgH - 2);
-  const w = clamp(Math.round((rect.width  + padH * 2) * scale), 1, imgW - l);
-  const h = clamp(Math.round((rect.height + PADDING_V * 2) * scale), 1, imgH - t);
-
-  const zoomedW = Math.round(w * ZOOM / scale);
-  const zoomedH = Math.round(h * ZOOM / scale);
-  const finalH  = Math.max(zoomedH, 100);
-  const finalW  = Math.round(zoomedW * finalH / zoomedH);
-
-  const buf = await sharp(srcPath)
-    .extract({ left: l, top: t, width: w, height: h })
-    .resize({ width: finalW, height: finalH, fit: 'fill' })
-    .png()
-    .toBuffer();
-
-  return buf.toString('base64');
+async function scaleToHeight(buf, targetH) {
+  const meta = await sharp(buf).metadata();
+  if (meta.height === targetH) return buf;
+  const ratio = targetH / meta.height;
+  return sharp(buf).resize(Math.round(meta.width * ratio), targetH).png().toBuffer();
 }
 
-function bugCard(bug, frontendB64, figmaB64) {
-  const badgeBg   = bug.severity === 'CRIT' ? '#fef2f2' : '#f8fafc';
-  const badgeText = bug.severity === 'CRIT' ? '#b91c1c'  : '#475569';
-  const badgeBrd  = bug.severity === 'CRIT' ? '#fecaca'  : '#cbd5e1';
-
+// ── Bug card HTML ─────────────────────────────────────────────────────────────
+function renderCard(bug, figmaB64, feB64) {
   return `
-  <div style="background:#fff;border:1px solid #e2e4e9;border-radius:12px;overflow:hidden;margin-bottom:24px;">
-    <div style="background:#f1f3f7;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-weight:600;font-size:13px;letter-spacing:.05em;color:#1e293b;text-transform:uppercase;">${bug.component}</span>
-      <div style="display:flex;align-items:center;gap:10px;">
-        <span style="font-size:13px;color:#64748b;">Bug #${bug.id}</span>
-        <span style="font-size:11px;font-weight:600;padding:3px 8px;border-radius:4px;border:1px solid ${badgeBrd};background:${badgeBg};color:${badgeText};">${bug.severity}</span>
-      </div>
+<div class="card">
+  <div class="card-header">
+    <span class="comp">${bug.component.toUpperCase()}</span>
+    <span class="bug-num">Bug #${bug.num}</span>
+  </div>
+  <div class="screenshots">
+    <div class="side">
+      <div class="pill">Design — expected</div>
+      <img src="${figmaB64}" alt="Design">
     </div>
-    <div style="display:flex;border-bottom:1px solid #e2e4e9;">
-      <div style="flex:1;padding:16px;background:#fafafa;display:flex;flex-direction:column;align-items:center;gap:8px;border-right:1px solid #e2e4e9;">
-        <span style="font-size:11px;font-weight:500;padding:3px 10px;background:#f8fafc;color:#1e293b;border-radius:4px;border:1px solid #e2e4e9;">Design — expected</span>
-        <img src="data:image/png;base64,${figmaB64}" style="max-width:100%;border-radius:4px;" />
-      </div>
-      <div style="flex:1;padding:16px;background:#fafafa;display:flex;flex-direction:column;align-items:center;gap:8px;">
-        <span style="font-size:11px;font-weight:500;padding:3px 10px;background:#f8fafc;color:#1e293b;border-radius:4px;border:1px solid #e2e4e9;">Frontend — current</span>
-        <img src="data:image/png;base64,${frontendB64}" style="max-width:100%;border-radius:4px;" />
-      </div>
+    <div class="divider"></div>
+    <div class="side">
+      <div class="pill">Frontend — current</div>
+      <img src="${feB64}" alt="Frontend">
     </div>
-    <div style="padding:14px 20px;display:grid;grid-template-columns:120px 1fr 1fr;gap:16px;font-size:13px;">
-      <span style="color:#64748b;">${bug.property}</span>
-      <span style="color:#16a34a;">${bug.expected}</span>
-      <span style="color:#dc2626;">${bug.actual}</span>
-    </div>
-  </div>`;
+  </div>
+  <div class="prop-row">
+    <div class="prop-cell label-cell">${bug.property}</div>
+    <div class="prop-cell expected-cell">${bug.expected}</div>
+    <div class="prop-cell actual-cell">${bug.actual}</div>
+  </div>
+</div>`;
 }
 
-function generateHTML(cards) {
-  const total  = BUGS.length;
-  const crits  = BUGS.filter(b => b.severity === 'CRIT').length;
-  const minors = BUGS.filter(b => b.severity === 'Minor').length;
-
+// ── Page HTML ─────────────────────────────────────────────────────────────────
+function buildPage(cards, bugs, figmaUrl) {
+  const total = bugs.length;
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${FEATURE_TITLE} design review</title>
+<title>${featureName} design review</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px 20px; color: #1e293b; }
-  .wrap { max-width: 1040px; margin: 0 auto; }
-  h1 { font-size: 22px; font-weight: 700; }
-  .meta { font-size: 13px; color: #64748b; margin-top: 4px; }
-  .figma-link { display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:13px;color:#2563eb;text-decoration:none;border:1px solid #bfdbfe;background:#eff6ff;padding:6px 12px;border-radius:6px; }
-  .summary { display:flex;gap:16px;margin:24px 0; }
-  .stat { flex:1;background:#fff;border:1px solid #e2e4e9;border-radius:10px;padding:16px;text-align:center; }
-  .stat-n { font-size:28px;font-weight:700; }
-  .stat-l { font-size:12px;color:#64748b;margin-top:4px; }
-  .footer { text-align:center;font-size:12px;color:#94a3b8;margin-top:32px; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #f4f5f7; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; padding: 40px 20px; }
+  .wrapper { max-width: 1040px; margin: 0 auto; }
+
+  .page-header { margin-bottom: 28px; }
+  .page-header h1 { font-size: 22px; font-weight: 600; color: #0f172a; margin-bottom: 8px; }
+  .meta { font-size: 14px; color: #64748b; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .figma-link { color: #2563eb; text-decoration: none; }
+  .figma-link:hover { text-decoration: underline; }
+
+  .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 32px; }
+  .summary-card { background: #fff; border: 1px solid #e2e4e9; border-radius: 10px; padding: 20px; text-align: center; }
+  .s-num   { font-size: 34px; font-weight: 700; color: #0f172a; }
+  .s-label { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+  .card { background: #fff; border: 1px solid #e2e4e9; border-radius: 12px; margin-bottom: 24px; overflow: hidden; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; background: #f1f3f7; padding: 14px 20px; border-bottom: 1px solid #e2e4e9; }
+  .comp    { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; color: #475569; }
+  .bug-num { font-size: 13px; color: #64748b; }
+
+  .screenshots { display: flex; align-items: flex-start; background: #fafafa; min-height: 200px; padding: 20px; }
+  .side { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .side img { max-width: 100%; border-radius: 6px; border: 1px solid #e2e4e9; }
+  .divider { width: 1px; background: #e2e4e9; align-self: stretch; margin: 0 20px; flex-shrink: 0; }
+  .pill { background: #f8fafc; color: #1e293b; font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 4px; border: 1px solid #e2e4e9; align-self: flex-start; }
+
+  .prop-row { display: grid; grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid #e2e4e9; }
+  .prop-cell { padding: 12px 16px; font-size: 13px; border-right: 1px solid #e2e4e9; }
+  .prop-cell:last-child { border-right: none; }
+  .label-cell    { color: #475569; font-weight: 500; }
+  .expected-cell { color: #16a34a; font-weight: 500; }
+  .actual-cell   { color: #dc2626; font-weight: 500; }
+
+  .footer { text-align: center; font-size: 12px; color: #94a3b8; margin-top: 40px; }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div style="margin-bottom:24px;">
-    <h1>${FEATURE_TITLE} design review</h1>
-    <div class="meta">${DATE_DISPLAY}</div>
-    <a class="figma-link" href="${FIGMA_LINK}" target="_blank">🔗 Link to Actual Designs</a>
+<div class="wrapper">
+  <div class="page-header">
+    <h1>${featureName.replace(/-/g, ' ')} design review</h1>
+    <div class="meta">
+      <span>${dateHuman}</span>
+      ${figmaUrl ? `<a href="${figmaUrl}" class="figma-link" target="_blank">🔗 Link to Actual Designs</a>` : ''}
+    </div>
   </div>
+
   <div class="summary">
-    <div class="stat"><div class="stat-n">${total}</div><div class="stat-l">Total Bugs</div></div>
-    <div class="stat"><div class="stat-n" style="color:#b91c1c;">${crits}</div><div class="stat-l">Critical</div></div>
-    <div class="stat"><div class="stat-n" style="color:#475569;">${minors}</div><div class="stat-l">Minor</div></div>
+    <div class="summary-card"><div class="s-num">${total}</div><div class="s-label">Total Bugs</div></div>
+    <div class="summary-card"><div class="s-num">${bugs.filter(b => b.severity === 'CRIT').length}</div><div class="s-label">Critical</div></div>
+    <div class="summary-card"><div class="s-num">${bugs.filter(b => b.severity !== 'CRIT').length}</div><div class="s-label">Minor</div></div>
   </div>
+
   ${cards.join('\n')}
-  <div class="footer">Generated by Claude Design Review · ${DATE_DISPLAY}</div>
+
+  <div class="footer">Generated by Claude Design Review · ${dateHuman}</div>
 </div>
 </body>
 </html>`;
 }
 
-function cleanup() {
-  if (!fs.existsSync(SCREENSHOTS_DIR)) return;
-  for (const f of fs.readdirSync(SCREENSHOTS_DIR)) {
-    fs.unlinkSync(path.join(SCREENSHOTS_DIR, f));
-  }
-  fs.rmdirSync(SCREENSHOTS_DIR);
-  console.log('Screenshots cleaned up.');
-}
-
-async function main() {
-  console.log('Connecting to Chrome...');
-  let client;
-  try {
-    client = await CDP({ port: 9222 });
-  } catch {
-    console.error('❌ Cannot connect to Chrome. Run: npm run chrome');
+// ── Main ──────────────────────────────────────────────────────────────────────
+async function run() {
+  if (!fs.existsSync(BUGS_PATH)) {
+    console.error(`❌ bugs.json not found at ${BUGS_PATH}`);
+    console.error('   Claude should write this file before calling generate-report.js');
     process.exit(1);
   }
 
-  const { Runtime } = client;
-  await Runtime.enable();
-
-  const frontendMeta = await sharp(FRONTEND_PATH).metadata();
-  const figmaMeta    = await sharp(FIGMA_PATH).metadata();
-  const figmaScale   = figmaMeta.width / DESIGN_VIEWPORT;
-
-  console.log(`Frontend: ${frontendMeta.width}×${frontendMeta.height}`);
-  console.log(`Figma:    ${figmaMeta.width}×${figmaMeta.height} (scale: ${figmaScale.toFixed(2)}x)`);
-
-  const rects = {};
-  for (const [key, query] of Object.entries(QUERIES)) {
-    const { result } = await Runtime.evaluate({ expression: query });
-    if (result.value) {
-      rects[key] = JSON.parse(result.value);
-      console.log(`✅ Found [${key}]: top=${rects[key].top.toFixed(0)} left=${rects[key].left.toFixed(0)} w=${rects[key].width.toFixed(0)} h=${rects[key].height.toFixed(0)}`);
-    } else {
-      console.warn(`⚠️  Element not found: ${key}`);
-    }
+  let bugs;
+  try {
+    bugs = JSON.parse(fs.readFileSync(BUGS_PATH, 'utf8'));
+  } catch {
+    console.error('❌ bugs.json is not valid JSON. Check that Claude wrote it correctly before running this script.');
+    process.exit(1);
   }
+  if (!Array.isArray(bugs) || bugs.length === 0) {
+    console.error('❌ bugs.json must be a non-empty array. Got:', typeof bugs);
+    process.exit(1);
+  }
+  const missingFields = bugs.find(b => !b.num || !b.component || !b.property || !b.expected || !b.actual);
+  if (missingFields) {
+    console.error(`❌ Bug #${missingFields.num ?? '?'} is missing required fields (num, component, property, expected, actual).`);
+    process.exit(1);
+  }
+  const figmaUrl = bugs[0]?.figmaUrl || null;
 
-  await client.close();
-
+  console.log(`Building report for ${bugs.length} bugs…`);
   const cards = [];
-  for (const bug of BUGS) {
-    const rect = rects[bug.elementKey];
-    if (!rect) {
-      console.warn(`⚠️  Skipping crop for bug #${bug.id} — element [${bug.elementKey}] not found`);
-      continue;
-    }
-    const padH = bug.paddingH || PADDING_H;
-    const frontendB64 = await cropImage(FRONTEND_PATH, rect, frontendMeta.width, frontendMeta.height, 1,          padH);
-    const figmaB64    = await cropImage(FIGMA_PATH,    rect, figmaMeta.width,    figmaMeta.height,    figmaScale, padH);
-    cards.push(bugCard(bug, frontendB64, figmaB64));
-    console.log(`✅ Bug #${bug.id} cropped`);
+
+  for (const bug of bugs) {
+    const figmaPath = path.join(CROPS_DIR, `fig_bug${bug.num}.png`);
+    const fePath    = path.join(CROPS_DIR, `fe_bug${bug.num}.png`);
+
+    if (!fs.existsSync(figmaPath)) { console.error(`❌ Missing: ${figmaPath}`); process.exit(1); }
+    if (!fs.existsSync(fePath))    { console.error(`❌ Missing: ${fePath}`);    process.exit(1); }
+
+    let figmaBuf = fs.readFileSync(figmaPath);
+    let feBuf    = fs.readFileSync(fePath);
+
+    // Scale both sides to the same height
+    const figmaMeta = await sharp(figmaBuf).metadata();
+    const feMeta    = await sharp(feBuf).metadata();
+    const targetH   = Math.max(figmaMeta.height, feMeta.height, 150);
+
+    figmaBuf = await scaleToHeight(figmaBuf, targetH);
+    feBuf    = await scaleToHeight(feBuf, targetH);
+
+    cards.push(renderCard(bug, toB64(figmaBuf), toB64(feBuf)));
+    console.log(`  Bug ${bug.num} ✓`);
   }
 
-  const filename = `design-review-${FEATURE}-${DATE_ISO}.html`;
-  fs.writeFileSync(path.join(OUTPUT_DIR, filename), generateHTML(cards));
-  console.log(`\nReport generated: ${filename}`);
-
-  cleanup();
+  const outPath = path.join(process.env.HOME, 'Desktop', `design-review-${featureName}-${dateISO}.html`);
+  fs.writeFileSync(outPath, buildPage(cards, bugs, figmaUrl), 'utf8');
+  console.log(`\nReport generated: design-review-${featureName}-${dateISO}.html`);
 }
 
-main();
+run().catch(err => { console.error('❌', err.message); process.exit(1); });

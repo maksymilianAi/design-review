@@ -1,10 +1,16 @@
 {
   "name": "design-review",
   "version": "1.0.0",
-  "description": "Design review tool via Chrome CDP + Claude Code",
+  "description": "Design review automation via Chrome CDP + Claude Code + Figma MCP",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
-    "chrome": "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-dr &",
-    "start": "node dr.js"
+    "chrome": "/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome --remote-debugging-port=9222 --user-data-dir=$HOME/.chrome-dr &",
+    "screenshot": "node dr.js",
+    "crop": "node dr-crop.js",
+    "audit": "node dr-audit.js --pretty",
+    "report": "node generate-report.js"
   },
   "dependencies": {
     "chrome-remote-interface": "^0.33.2",

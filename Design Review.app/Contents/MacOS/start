@@ -1,90 +1,84 @@
 #!/bin/bash
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/../../../" && pwd)"
-APP_PATH="$(cd "$SCRIPT_DIR/../.." && pwd)"
+CHROME_PROFILE="$HOME/.chrome-dr"
 
-# Extend PATH to cover common install locations for node and claude
 export PATH="$HOME/.local/bin:/usr/local/bin:/opt/homebrew/bin:/opt/homebrew/sbin:$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node/ 2>/dev/null | sort -V | tail -1)/bin:$PATH"
 
-# ── Requirement checks ────────────────────────────────────────────────────────
+# ── 1. Claude.app installed? ──────────────────────────────────────────────────
+if [ ! -d "/Applications/Claude.app" ]; then
+  RESPONSE=$(osascript -e 'button returned of (display dialog "Claude is not installed.\n\nDownload it from claude.ai, install it, then relaunch Design Review." with title "Design Review — Missing Requirement" buttons {"Open claude.ai", "Cancel"} default button "Open claude.ai")')
+  [ "$RESPONSE" = "Open claude.ai" ] && open "https://claude.ai/download"
+  exit 1
+fi
 
-# Fix 3: Check if port 9222 is already in use — kill stale debug Chrome if needed
+# ── 2. Logged in to Claude? ───────────────────────────────────────────────────
+# Claude Code stores session state in ~/.claude/ — empty or missing = not set up
+CLAUDE_DIR="$HOME/.claude"
+if [ ! -d "$CLAUDE_DIR" ] || [ -z "$(ls -A "$CLAUDE_DIR" 2>/dev/null)" ]; then
+  RESPONSE=$(osascript -e 'button returned of (display dialog "You are not logged in to Claude.\n\n1. Open Claude\n2. Log in to your account\n3. Switch to the Code tab\n4. Relaunch Design Review" with title "Design Review — Login Required" buttons {"Open Claude", "Cancel"} default button "Open Claude")')
+  [ "$RESPONSE" = "Open Claude" ] && open -a "Claude"
+  exit 0
+fi
+
+# ── 3. Google Chrome installed? ──────────────────────────────────────────────
+if ! /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version &>/dev/null; then
+  RESPONSE=$(osascript -e 'button returned of (display dialog "Google Chrome is not installed.\n\nDesign Review uses Chrome to capture screenshots of your frontend." with title "Design Review — Missing Requirement" buttons {"Open google.com/chrome", "Cancel"} default button "Open google.com/chrome")')
+  [ "$RESPONSE" = "Open google.com/chrome" ] && open "https://google.com/chrome"
+  exit 1
+fi
+
+# ── 4. Node.js installed? ────────────────────────────────────────────────────
+if ! command -v node &>/dev/null; then
+  INSTALL=$(osascript -e 'button returned of (display dialog "Node.js is not installed.\n\nWould you like to install it automatically?" with title "Design Review — Missing Requirement" buttons {"Cancel", "Install"} default button "Install")')
+  if [ "$INSTALL" = "Cancel" ]; then exit 0; fi
+  osascript <<APPLESCRIPT
+tell application "Terminal"
+  do script "(command -v brew &>/dev/null || /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\") && brew install node && echo '✅ Node.js installed.' && sleep 2 && open '$SCRIPT_DIR/../../..'"
+  activate
+end tell
+APPLESCRIPT
+  exit 0
+fi
+
+# ── 5. Figma connected? (first run reminder) ──────────────────────────────────
+FIGMA_CHECK="$CHROME_PROFILE/.figma-connected"
+if [ ! -f "$FIGMA_CHECK" ]; then
+  RESPONSE=$(osascript -e 'button returned of (display dialog "Before your first review — connect Figma to Claude.\n\nIn Claude: Code tab → Settings → Integrations → Figma → Connect\n\nAlready done? Click Continue." with title "Design Review — Figma Setup" buttons {"Open Claude", "Continue"} default button "Continue")')
+  if [ "$RESPONSE" = "Open Claude" ]; then
+    open -a "Claude"
+    exit 0
+  fi
+  mkdir -p "$(dirname "$FIGMA_CHECK")"
+  touch "$FIGMA_CHECK"
+fi
+
+# ── 6. Install npm dependencies ───────────────────────────────────────────────
+(cd "$PROJECT_DIR/_core" && [ -d node_modules ] || npm install --silent)
+
+# ── 7. Kill stale Chrome on port 9222 ─────────────────────────────────────────
 if lsof -ti:9222 &>/dev/null; then
   lsof -ti:9222 | xargs kill -9 2>/dev/null
 fi
 
-if ! /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome --version &>/dev/null; then
-  osascript -e 'display dialog "Google Chrome is not installed.\n\nDownload it from google.com/chrome and try again." with title "Design Review — Missing Requirement" buttons {"OK"} default button "OK"'
-  exit 1
-fi
-
-# Fix 1: Auto-install Node.js and relaunch instead of asking user to reopen
-if ! command -v node &>/dev/null; then
-  INSTALL_NODE=$(osascript -e 'button returned of (display dialog "Node.js is not installed. It is required to run Design Review.\n\nWould you like to install it automatically?" with title "Design Review — Missing Requirement" buttons {"Cancel", "Install"} default button "Install")')
-  if [ "$INSTALL_NODE" = "Cancel" ]; then exit 0; fi
-  osascript <<APPLESCRIPT
-tell application "Terminal"
-  do script "(command -v brew &>/dev/null || /bin/bash -c \"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\") && brew install node && echo '✅ Node.js installed. Relaunching Design Review...' && sleep 2 && open '$APP_PATH'"
-  activate
-end tell
-APPLESCRIPT
-  exit 0
-fi
-
-# Fix 1: Auto-install Claude Code and relaunch instead of asking user to reopen
-if ! command -v claude &>/dev/null; then
-  INSTALL_CLAUDE=$(osascript -e 'button returned of (display dialog "Claude Code is not installed. It is required to run Design Review.\n\nWould you like to install it automatically?" with title "Design Review — Missing Requirement" buttons {"Cancel", "Install"} default button "Install")')
-  if [ "$INSTALL_CLAUDE" = "Cancel" ]; then exit 0; fi
-  osascript <<APPLESCRIPT
-tell application "Terminal"
-  do script "npm install -g @anthropic-ai/claude-code && echo '✅ Claude Code installed. Relaunching Design Review...' && sleep 2 && open '$APP_PATH'"
-  activate
-end tell
-APPLESCRIPT
-  exit 0
-fi
-
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Fix 4: Figma token dialog includes instructions on where to find the token
-TOKEN=$(security find-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w 2>/dev/null)
-
-if [ -z "$TOKEN" ]; then
-  TOKEN=$(osascript <<'APPLESCRIPT'
-    set theResult to display dialog "Paste your Figma personal access token below.\n\nTo get one:\nFigma → your profile icon → Settings → Security → Personal access tokens → Generate new token" \
-      default answer "" \
-      with title "Design Review — First Time Setup" \
-      buttons {"Cancel", "Save"} \
-      default button "Save"
-    return text returned of theResult
-APPLESCRIPT
-  )
-
-  if [ -z "$TOKEN" ]; then
-    exit 0
-  fi
-
-  security add-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w "$TOKEN" 2>/dev/null || \
-  security add-generic-password -a "$USER" -s "DesignReview-FigmaToken" -w "$TOKEN" -U 2>/dev/null
-
-  osascript -e 'display notification "Token saved. You are ready to go!" with title "Design Review"'
-fi
-
-# Open Chrome with debug port
+# ── 8. Open dedicated Chrome window ──────────────────────────────────────────
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --remote-debugging-port=9222 \
-  --user-data-dir=/tmp/chrome-dr \
+  --user-data-dir="$CHROME_PROFILE" \
   --no-first-run \
-  --no-default-browser-check &
+  --no-default-browser-check \
+  --disable-extensions \
+  --disable-sync \
+  --disable-background-networking \
+  --disable-translate \
+  --disable-backgrounding-occluded-windows \
+  --disable-renderer-backgrounding \
+  --new-tab-url=about:blank \
+  --disable-features=NetworkPrediction,OptimizationHints &
 
-# Fix 5: Notify designer what the new Chrome window is for
+# ── 9. Open Claude.app with project directory ─────────────────────────────────
+# Opens Claude.app — user switches to Code tab and opens the Design Review project
+open -a "Claude" "$PROJECT_DIR"
+
 sleep 1
-osascript -e 'display notification "A dedicated Chrome window just opened. You will be asked to navigate to your app page there during the review." with title "Design Review — Chrome Ready"'
-
-# Fix 2: Show sign-in guidance before claude launches, then start
-osascript <<APPLESCRIPT
-tell application "Terminal"
-  do script "cd '$PROJECT_DIR/_core' && ([ -d node_modules ] || npm install) && cd '$PROJECT_DIR' && echo '' && echo '─────────────────────────────────────────' && echo '  Design Review is starting...' && echo '  If asked to sign in to Claude, follow' && echo '  the prompts — it only takes a minute.' && echo '─────────────────────────────────────────' && echo '' && trap 'pkill -f \"user-data-dir=/tmp/chrome-dr\" 2>/dev/null' EXIT INT TERM HUP; claude ."
-  activate
-end tell
-APPLESCRIPT
+osascript -e 'display notification "Chrome is ready. In Claude: switch to Code tab → open Design Review project." with title "Design Review"'

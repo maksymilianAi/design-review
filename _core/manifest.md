@@ -1,7 +1,7 @@
-# Design Review Manifest V5.0
+# Design Review Manifest V5.1
 
 ## About this file
-This file is the single source of truth for the Design Review tool. It contains both the operational flow and all review rules. Always follow these instructions exactly.
+This file defines the operational process for Design Review. Product-specific rules, exclusions, and context are in `manifest-rules.md` — read that file immediately after this one. Both files together are the source of truth.
 
 ---
 
@@ -9,22 +9,43 @@ This file is the single source of truth for the Design Review tool. It contains 
 
 On startup — immediately begin, do not show a generic greeting:
 
+0. Read `_core/manifest-rules.md` silently before doing anything else.
+0a. Verify Figma MCP is available by calling `get_screenshot` with fileKey `"test"` and nodeId `"1:1"` — any response (including an error) confirms the tool is reachable. If the tool itself is unavailable (not just a bad node ID), stop immediately and show:
+
+---
+**Figma is not connected to Claude.**
+
+To fix this:
+1. Go to **claude.ai** → your profile icon → **Settings** → **Integrations**
+2. Find **Figma** and click **Connect**
+3. Authorize in the Figma dialog that opens
+4. Restart Design Review
+
+---
+
 1. Ask: "Paste the Figma URL for this review:"
-2. Wait for the URL
-3. Ask: "Open the page you want to review in the Chrome window, then type 'go'."
+2. Wait for the URL. Parse it — extract `fileKey` and `nodeId` (convert `-` → `:` in nodeId). Store both.
+3. Ask: "Open the page you want to review in the Chrome window, then type 'go' here in the chat."
 4. Wait for the user to reply "go"
-4a. Ask: "Anything specific to focus on or skip? (e.g. 'only check the header', 'skip the table') — or press Enter to review everything."
-Wait for the user's response. Store these as scope instructions and apply them during the comparison step.
-5. Run via Bash: `node _core/dr.js "<figma_url>"` — downloads the Figma design and captures the frontend screenshot
-6. Read `screenshots/frontend-latest.png` and `screenshots/figma-latest.png`
-7. Perform the visual comparison following all rules below
-8. Present bugs as a markdown table, then ask Y/N
-9. On Y: use the Figma URL from step 1 — do not ask again. Run `node _core/generate-report.js` via Bash
-10. Open the report: `open ~/Desktop/design-review-*.html`
+5. Ask: "Anything specific to focus on or skip? — or press Enter to review everything."
+   Wait for the user's response. Store as scope instructions.
+6. Run via Bash: `node _core/dr.js` — captures the frontend screenshot
+7. Call `get_screenshot(fileKey, nodeId)` via Figma MCP to get the design screenshot
+8. Read `screenshots/frontend-latest.png`. Use the Figma MCP screenshot as the design reference.
+9. Perform the visual comparison following all rules below
+10. Present bugs as a markdown table, then ask Y/N
+11. On Y — generate the report:
+    - For each bug: run `node _core/dr-crop.js "SELECTOR" fe_bugN` to save the frontend crop
+    - For each bug: call `get_screenshot(fileKey, bugNodeId)` and save the result as `screenshots/crops/fig_bugN.png`
+    - Write `screenshots/bugs.json` with the bug metadata array
+    - Run `node _core/generate-report.js feature-name` via Bash
+    - Open: `open ~/Desktop/design-review-*.html`
+12. Ask: "Any crops to fix? Mention the bug number and which side."
 
 **Technical notes:**
-- Never ask the user for their Figma token — it is stored securely and handled automatically
-- Screenshots are auto-deleted after report generation
+- Figma design is fetched via the Figma MCP connector — no token needed
+- Never ask the user for a Figma token
+- `bugs.json` format: `[{ "num": 1, "component": "", "property": "", "expected": "", "actual": "", "severity": "CRIT|Minor", "figmaUrl": "" }]`
 
 ---
 
@@ -91,6 +112,24 @@ Rule: never skip an entire component because it contains dynamic data. Only skip
 
 ---
 
+### Label vs. value in detail / form views
+
+Detail pages and settings pages often show field rows with a label on the left and a value on the right (e.g. "Full name · Linda Smith", "Date of birth · 12 Mar 1990", "Gender · Female").
+
+**How to tell them apart:** look at the design. Labels are short, descriptive, and the same across all records. Values are the actual data for that specific record — a name, a date, an ID, a selection.
+
+| Part | Examples | Treat as |
+|------|----------|----------|
+| Label (left side) | "Full name", "Date of birth", "Gender", "Department" | **Static** — must match design exactly |
+| Value (right side) | "Linda Smith", "12 Mar 1990", "Female", "Engineering" | **Dynamic** — content may differ; check styling only |
+
+When reviewing a detail or form page:
+- The label text must match the design exactly — flag any difference.
+- The value text is dynamic — do NOT flag the content itself as a bug.
+- DO still check the value's styling: color, font size/weight, placeholder state, empty state formatting.
+
+---
+
 ## Ignore completely
 - Sticky header on scrolled screenshots
 - Transparent backgrounds that visually match due to parent background
@@ -106,7 +145,7 @@ The design screenshot is the source of truth. Work top to bottom through these z
 **Zone 1 — Page header / breadcrumbs**
 **Zone 2 — Page title, section headings, counters/badges next to titles**
 **Zone 3 — Filters, tabs, search bar**
-**Zone 4 — Primary content (tables, cards, lists, charts)**
+**Zone 4 — Primary content (tables, cards, lists, detail sections, form groups)**
 **Zone 5 — Pagination and footer**
 
 For every visible element in each zone, check:
@@ -117,13 +156,25 @@ For every visible element in each zone, check:
 5. **Spacing** — padding, gaps, margins
 6. **Icons** — type, size, color
 7. **Component dimensions** — height, border radius
+8. **Interactive controls** — for every collapsible section or module, check whether expand/collapse arrows or toggle icons are present, visible, and match the design. A missing arrow on a collapsible section is always a bug.
 
-**Three things that are always missed — check these explicitly every time:**
+**Four things that are always missed — check these explicitly every time:**
 - **Section title counters** — if a heading has a number or count next to it in the design (e.g. "Expenses 24"), check the frontend has it too. Missing counter = bug.
 - **All table column headers including the first one** — count every column header in the design. The first column is the most commonly missing. Every header must be present with exact text.
 - **Text color of amounts and totals** — monetary values and summary numbers shown in a brand color (blue, teal, green) when the design shows black or dark = bug.
+- **Expand/collapse controls on every module** — scan every section header in the design for an arrow or chevron icon. If the design has it and the frontend does not — bug. If the arrow is only visible on hover in the frontend but always visible in the design — bug.
 
-Do not stop after finding a few bugs — complete all five zones before writing the bug table.
+### Completeness rule — MANDATORY
+
+**Finding bugs does not mean you are done.** The number of bugs found so far is irrelevant — keep going until every element in every zone has been checked.
+
+Before writing the bug table, do a mandatory self-check:
+
+1. **Count sections in the design** — how many named sections or groups are visible (e.g. "General information", "Contact details", "Employment", "Permissions")? Write down that number internally.
+2. **Verify you reviewed every section** — if you reviewed fewer sections than you counted, go back and finish.
+3. **For each section, count rows/fields** — in detail or form views, count every label row in the design for that section. Verify you checked each one. A section with 8 label rows must produce 8 checked rows, not 3.
+4. **Only then write the bug table.**
+
 If unsure whether something is dynamic — flag it in the table. Let the user decide.
 
 When a visual difference is confirmed — get exact values in this order:
@@ -205,28 +256,34 @@ const anchorY = r.top + r.height / 2;
 ```
 
 **Step 2 — Calculate crop window**
-- `cropW = Math.max(r.width + 240, 400)`
-- `cropH = Math.max(r.height + 80, 120)`
+- `cropW = Math.max(r.width + 500, 700)`
+- `cropH = Math.max(r.height + 200, 220)`
 - `cropX = anchorX - cropW / 2`
 - `cropY = anchorY - cropH / 2`
 
+The crop must show enough surrounding context that a reader immediately understands where on the page the bug lives — not just the element in isolation.
+
 **Step 3 — Clamp to page bounds**
 If `cropX < 0`: set `cropX = 0`, then `cropW = anchorX * 2` so the anchor stays centered.
+If `cropY < 0`: set `cropY = 0`.
 
 **Step 4 — Take the frontend crop**
 The bug element must appear dead-center horizontally and vertically.
 
 **Step 5 — Get the Figma-side image**
-Call `get_screenshot(fileKey, nodeId)` with the component's nodeId. Use the returned image directly as the design-side crop — no manual cropping of `figma-latest.png` needed.
+- If the bug element node is smaller than 200px wide or 60px tall — call `get_screenshot` on its **parent section node** instead, not the element itself. Small nodes produce context-free crops that are unreadable.
+- Otherwise call `get_screenshot(fileKey, nodeId)` with the element's nodeId.
+- Never slice `figma-latest.png` manually.
 
 **Step 6 — Scale and validate**
 - Scale both to the same height (taller × zoom multiplier)
-- Final height ≥ 100px
+- Final height ≥ 150px
+- Both crops must show enough context to understand the bug without reading the description
 
 ### Before embedding — verify:
-- Bug element is centered in both crops
-- Bug element is fully visible — nothing cut off
-- Both crops show the same element
+- Bug element is visible and identifiable in both crops
+- There is meaningful context around the element (not just the element alone)
+- Both crops show the same region of the page
 - Figma crop came from `get_screenshot`, not from slicing `figma-latest.png`
 
 ---
