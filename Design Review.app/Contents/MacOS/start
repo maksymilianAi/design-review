@@ -82,4 +82,4 @@ fi
 open -a "Claude" "$PROJECT_DIR"
 
 sleep 1
-osascript -e 'display notification "Chrome is ready. In Claude: switch to Code tab → open Design Review project." with title "Design Review"'
+osascript -e 'display notification "Chrome is ready. In Claude: click the Code tab at the top — Design Review is loaded." with title "Design Review"'
