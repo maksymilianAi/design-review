@@ -54,11 +54,6 @@ Double-click **`Design Review.app`**.
 >
 > You only need to do this once. After that, the app opens normally.
 >
-> **Alternative (Terminal):**
-> ```bash
-> xattr -d com.apple.quarantine "/path/to/Design Review.app"
-> ```
-
 ### 4. Switch to the Code tab
 
 > [!IMPORTANT]
@@ -250,11 +245,6 @@ Open Claude Code → Settings → Connectors → find **Figma** → reconnect. T
 
 **macOS blocked the app — "developer cannot be verified"**
 macOS Gatekeeper blocks apps downloaded from the internet that aren't signed with an Apple developer certificate. Click **Cancel** on the warning dialog (not Move to Bin), then right-click the app in Finder → **Open** → **Open**. Required once after download.
-
-If right-click → Open doesn't work, run this in Terminal:
-```bash
-xattr -d com.apple.quarantine "/path/to/Design Review.app"
-```
 
 **Chrome window closed accidentally**
 Relaunch `Design Review.app` — it kills the stale Chrome process and opens a fresh one.
