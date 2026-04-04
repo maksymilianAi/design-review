@@ -30,9 +30,12 @@ Download and install from [claude.ai/download](https://claude.ai/download).
 
 ### 2. Connect Figma to Claude
 
+> [!IMPORTANT]
+> This step is required — Design Review will not work without it.
+
 Open the Claude Code app → Settings → Connectors → **Browse Connectors** → find **Figma** → Install.
 
-> You only need to do this once per account.
+You only need to do this once per account.
 
 ### 3. Download and open
 
@@ -40,7 +43,12 @@ Open the Claude Code app → Settings → Connectors → **Browse Connectors** �
 
 Double-click **`Design Review.app`**.
 
-> First time: macOS may block it. Right-click → **Open** → **Open**.
+> [!NOTE]
+> **First time only:** macOS may block the app. To allow it, open Terminal and run:
+> ```bash
+> xattr -cr ~/Downloads/design-review-main/Design\ Review.app
+> ```
+> After that, double-click opens it normally. Alternatively: right-click → **Open** → **Open**.
 
 ### 4. Run a review
 
