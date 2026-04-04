@@ -45,7 +45,11 @@ Double-click **`Design Review.app`**.
 
 > **First time only:** macOS may show a security warning. Right-click the app → **Open** → **Open**.
 
-### 4. Run a review
+### 4. Switch to the Code tab
+
+In Claude, click the **Code** tab at the top. Design Review is already loaded — Claude will greet you automatically.
+
+### 5. Run a review
 
 1. Paste the Figma URL when Claude asks
 2. Open the page in the Chrome window that launched
