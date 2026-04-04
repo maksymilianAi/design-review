@@ -54,15 +54,20 @@ if [ "$FIGMA_IN_CONFIG" = "no" ] && [ ! -f "$FIGMA_CHECK" ]; then
   touch "$FIGMA_CHECK"
 fi
 
-# ── 6. Install npm dependencies ───────────────────────────────────────────────
+# ── 6. Pull latest version from git ──────────────────────────────────────────
+if git -C "$PROJECT_DIR" remote get-url origin &>/dev/null; then
+  git -C "$PROJECT_DIR" pull --ff-only --quiet 2>/dev/null || true
+fi
+
+# ── 7. Install npm dependencies ───────────────────────────────────────────────
 (cd "$PROJECT_DIR/_core" && [ -d node_modules ] || npm install --silent)
 
-# ── 7. Kill stale Chrome on port 9222 ─────────────────────────────────────────
+# ── 8. Kill stale Chrome on port 9222 ─────────────────────────────────────────
 if lsof -ti:9222 &>/dev/null; then
   lsof -ti:9222 | xargs kill -9 2>/dev/null
 fi
 
-# ── 8. Open dedicated Chrome window ──────────────────────────────────────────
+# ── 9. Open dedicated Chrome window ──────────────────────────────────────────
 /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
   --remote-debugging-port=9222 \
   --user-data-dir="$CHROME_PROFILE" \
@@ -77,7 +82,7 @@ fi
   --new-tab-url=about:blank \
   --disable-features=NetworkPrediction,OptimizationHints &
 
-# ── 9. Open Claude.app with project directory ─────────────────────────────────
+# ── 10. Open Claude.app with project directory ────────────────────────────────
 # Opens Claude.app — user switches to Code tab and opens the Design Review project
 open -a "Claude" "$PROJECT_DIR"
 
