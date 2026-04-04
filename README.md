@@ -43,12 +43,7 @@ You only need to do this once per account.
 
 Double-click **`Design Review.app`**.
 
-> [!NOTE]
-> **First time only:** macOS may block the app. To allow it, open Terminal and run:
-> ```bash
-> xattr -cr ~/Downloads/design-review-main/Design\ Review.app
-> ```
-> After that, double-click opens it normally. Alternatively: right-click → **Open** → **Open**.
+> **First time only:** macOS may show a security warning. Right-click the app → **Open** → **Open**.
 
 ### 4. Run a review
 
@@ -232,7 +227,7 @@ chmod +x "Design Review.app/Contents/MacOS/start"
 Open Claude Code → Settings → Connectors → find **Figma** → reconnect. The connection occasionally expires.
 
 **macOS blocked the app**
-Run `xattr -cr "Design Review.app"` in Terminal, then double-click normally.
+Right-click `Design Review.app` → **Open** → **Open**. Required once after download.
 
 **Chrome window closed accidentally**
 Relaunch `Design Review.app` — it kills the stale Chrome process and opens a fresh one.
