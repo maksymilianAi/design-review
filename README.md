@@ -53,15 +53,7 @@ Double-click **`Design Review.app`**.
 >
 > Double-clicking will show a warning every time without a way through — right-click → Open is the only way to approve it. You only need to do this once.
 >
-### 4. Switch to the Code tab
-
-> [!IMPORTANT]
-> After the app launches, Claude opens but stays on the Chat or Cowork tab.
-> **Click the Code tab at the top of the Claude window** — Design Review is already loaded and Claude will start automatically.
-
-The app shows a reminder dialog with a "Got it" button — that's your cue to switch.
-
-### 5. Run a review
+### 4. Run a review
 
 1. Paste the Figma URL when Claude asks
 2. Open the page in the Chrome window that launched
