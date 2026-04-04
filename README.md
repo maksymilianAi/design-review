@@ -42,15 +42,15 @@ You only need to do this once per account.
 
 Launch Claude Code and click the **Code** tab at the top of the window.
 
-### 4. Paste the setup command
+### 4. Paste the setup command and press Enter
 
-Copy the line below and paste it into the Claude chat:
+Copy the line below and paste it into the chat — then press Enter.
 
 ```
 Set up and run Design Review: clone or update https://github.com/maksymilianAi/design-review to ~/design-review, install npm dependencies in ~/design-review/_core if needed, then read and follow ~/design-review/_core/manifest.md
 ```
 
-Claude will clone the repo, install dependencies, launch Chrome, and start the review automatically. No downloads, no installers.
+That's it. Claude reads this instruction and handles everything automatically — it downloads Design Review, sets it up, opens a Chrome window, and greets you. No installers, no unzipping, nothing to configure.
 
 ### 5. Run a review
 
