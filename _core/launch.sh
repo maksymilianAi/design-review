@@ -1,7 +1,7 @@
 #!/bin/bash
 # Design Review — bootstrap, update, and launch Chrome
 
-REPO_DIR=~/design-review
+REPO_DIR=~/Downloads/design-review
 
 # Pull latest changes
 git -C "$REPO_DIR" pull --ff-only -q 2>/dev/null || true

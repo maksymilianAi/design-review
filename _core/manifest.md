@@ -24,7 +24,7 @@ To fix this:
 
 ---
 
-0b. If `~/design-review/_core/launch.sh` exists — run `bash ~/design-review/_core/launch.sh`. If it does not exist — check if Chrome is running on port 9222 and launch it if not.
+0b. If `~/Downloads/design-review/_core/launch.sh` exists — run `bash ~/Downloads/design-review/_core/launch.sh`. If it does not exist — check if Chrome is running on port 9222 and launch it if not.
 
 0c. Output exactly this welcome message — nothing before it, nothing after it. Do not ask for the Figma URL yet.
 
