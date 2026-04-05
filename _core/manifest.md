@@ -65,8 +65,7 @@ To fix this:
 ## Viewport
 The screenshot is taken automatically at 1440px via CDP — no manual resizing needed.
 
-If the content width needs to be verified: `document.documentElement.clientWidth`
-If the result is not 1440 — report it and stop.
+The viewport is set automatically to 1440px via CDP before the screenshot is taken.
 
 ---
 

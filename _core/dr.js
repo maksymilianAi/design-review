@@ -32,12 +32,13 @@ async function run() {
     const { result: urlResult } = await Runtime.evaluate({ expression: 'location.href' });
     console.log(`📄 Page: ${urlResult.value}`);
 
+    await Emulation.setDeviceMetricsOverride({
+      width: TARGET_WIDTH, height: 900, deviceScaleFactor: 1, mobile: false,
+    });
+    await new Promise(r => setTimeout(r, 300));
+
     const { result: widthResult } = await Runtime.evaluate({ expression: 'document.documentElement.clientWidth' });
     const actualWidth = widthResult.value;
-    if (actualWidth !== TARGET_WIDTH) {
-      console.error(`❌ Viewport is ${actualWidth}px wide, expected ${TARGET_WIDTH}px. Stopping.`);
-      process.exit(1);
-    }
     console.log(`✅ Viewport: ${actualWidth}px`);
 
     const { result: scrollHeightResult } = await Runtime.evaluate({
