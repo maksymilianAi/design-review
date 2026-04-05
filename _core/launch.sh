@@ -6,6 +6,10 @@ REPO_DIR=~/design-review
 # Pull latest changes
 git -C "$REPO_DIR" pull --ff-only -q 2>/dev/null || true
 
+# Clean up screenshots from previous review
+rm -rf "$REPO_DIR/screenshots"
+mkdir -p "$REPO_DIR/screenshots/crops"
+
 # Install npm dependencies if needed
 if [ ! -d "$REPO_DIR/_core/node_modules" ]; then
   npm install --silent --prefix "$REPO_DIR/_core"
