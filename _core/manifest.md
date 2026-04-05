@@ -42,9 +42,10 @@ To fix this:
 4. Wait for the user to reply "go"
 5. Ask: "Anything specific to focus on or skip? Type 'all' to review everything."
    Wait for the user's response. If they type 'all' — review everything. Otherwise store their response as scope instructions.
-6. Run via Bash: `node _core/dr.js` — captures the frontend screenshot
+6. Run via Bash: `node ~/Downloads/design-review/_core/dr.js` — captures the frontend screenshot
+6a. Run via Bash: `node ~/Downloads/design-review/_core/dr-audit.js` — gathers DOM data (labels, headings, nav, colors). Use this output for the comparison instead of writing any inline JS or CDP scripts.
 7. Call `get_screenshot(fileKey, nodeId)` via Figma MCP to get the design screenshot
-8. Read `screenshots/frontend-latest.png`. Use the Figma MCP screenshot as the design reference.
+8. Read `~/Downloads/design-review/screenshots/frontend-latest.png`. Use the Figma MCP screenshot as the design reference.
 9. Perform the visual comparison following all rules below
 10. Present bugs as a markdown table, then ask Y/N
 11. On Y — generate the report:
@@ -100,7 +101,7 @@ If you catch yourself writing a dash, asterisk, or number at the start of a bug 
 - Do NOT show intermediate analysis, check results, or commentary — output the bug table only
 - Do NOT take any browser screenshots — they are provided automatically
 - When a visual difference is spotted: call `get_design_context(fileKey, nodeId)` with the component's nodeId first — it returns exact hex colors and px values from the design. Fall back to DevTools only for frontend-side values not available from the design context.
-- When DevTools is needed, batch ALL queries into a single JS call — never separate calls per element
+- When DevTools is needed, use `node ~/Downloads/design-review/_core/dr-audit.js` — never write inline JS or CDP scripts
 
 ---
 
