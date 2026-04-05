@@ -40,8 +40,8 @@ To fix this:
 2. Wait for the URL. Parse it — extract `fileKey` and `nodeId` (convert `-` → `:` in nodeId). Store both.
 3. Ask: "Open the page you want to review in the Chrome window, then type 'go' here in the chat."
 4. Wait for the user to reply "go"
-5. Ask: "Anything specific to focus on or skip? — or press Enter to review everything."
-   Wait for the user's response. Store as scope instructions.
+5. Ask: "Anything specific to focus on or skip? Type 'all' to review everything."
+   Wait for the user's response. If they type 'all' — review everything. Otherwise store their response as scope instructions.
 6. Run via Bash: `node _core/dr.js` — captures the frontend screenshot
 7. Call `get_screenshot(fileKey, nodeId)` via Figma MCP to get the design screenshot
 8. Read `screenshots/frontend-latest.png`. Use the Figma MCP screenshot as the design reference.
