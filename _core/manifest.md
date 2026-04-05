@@ -30,13 +30,7 @@ To fix this:
 
 ---
 
-```
-  *
-* | *
-  *
-```
 **Design Review**
-*by Maksymilian Soroka · built with Claude Code*
 
 ---
 
