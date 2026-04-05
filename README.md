@@ -47,10 +47,10 @@ Launch Claude Code and click the **Code** tab at the top of the window.
 Copy the line below and paste it into the chat — then press Enter.
 
 ```
-Set up and run Design Review: clone or update https://github.com/maksymilianAi/design-review to ~/design-review, install npm dependencies in ~/design-review/_core if needed, then read and follow ~/design-review/_core/manifest.md
+bash -c "[ -d ~/design-review ] || git clone https://github.com/maksymilianAi/design-review ~/design-review -q; bash ~/design-review/_core/launch.sh" && cat ~/design-review/_core/manifest.md
 ```
 
-That's it. Claude reads this instruction and handles everything automatically — it downloads Design Review, sets it up, opens a Chrome window, and greets you. No installers, no unzipping, nothing to configure.
+Claude will ask for one approval — that's the setup script running. Click **Allow**. It downloads Design Review, installs dependencies, opens a Chrome window, and greets you automatically.
 
 ### 5. Run a review
 

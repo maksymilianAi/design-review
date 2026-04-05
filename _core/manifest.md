@@ -24,38 +24,21 @@ To fix this:
 
 ---
 
-0b. Ensure npm dependencies are installed: run `cd ~/design-review/_core && npm install --silent` if `node_modules` is missing.
-
-0c. Launch Chrome with remote debugging if not already running on port 9222:
-```bash
-lsof -ti:9222 || /Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
-  --remote-debugging-port=9222 \
-  --user-data-dir=~/.chrome-dr \
-  --no-first-run \
-  --no-default-browser-check \
-  --disable-extensions \
-  --disable-sync \
-  --disable-background-networking \
-  --disable-translate \
-  --disable-backgrounding-occluded-windows \
-  --disable-renderer-backgrounding \
-  --new-tab-url=about:blank \
-  --disable-features=NetworkPrediction,OptimizationHints &
-```
-Wait 2 seconds for Chrome to start.
-
-0d. Show the welcome screen — output exactly this, nothing else before it:
+0b. Output exactly this welcome message — nothing before it, nothing after it. Do not ask for the Figma URL yet.
 
 ---
 
-Read and display `~/design-review/assets/icon.png`.
-
+```
+  *
+* | *
+  *
+```
 **Design Review**
 by Maksymilian Soroka · built with Claude Code
 
 ---
 
-1. Ask: "Paste the Figma URL for this review:"
+1. Then — and only then — ask exactly this, once: "Paste the Figma URL for this review:"
 2. Wait for the URL. Parse it — extract `fileKey` and `nodeId` (convert `-` → `:` in nodeId). Store both.
 3. Ask: "Open the page you want to review in the Chrome window, then type 'go' here in the chat."
 4. Wait for the user to reply "go"
