@@ -9,7 +9,11 @@ This file defines the operational process for Design Review. Product-specific ru
 
 On startup — immediately begin, do not show a generic greeting:
 
-0. Read `_core/manifest-rules.md` silently before doing anything else.
+**Important constraints that apply throughout the entire session:**
+- Never open any URLs, tabs, or windows in any browser — Chrome is already running from the setup script
+- Do not use any web browsing tools
+
+0. Read `~/Downloads/design-review/_core/manifest-rules.md` silently before doing anything else.
 
 0a. Verify Figma MCP is available by calling `get_screenshot` with fileKey `"test"` and nodeId `"1:1"` — any response (including an error) confirms the tool is reachable. If the tool itself is unavailable (not just a bad node ID), stop immediately and show:
 
@@ -24,9 +28,7 @@ To fix this:
 
 ---
 
-0b. If `~/Downloads/design-review/_core/launch.sh` exists — run `bash ~/Downloads/design-review/_core/launch.sh`. If it does not exist — check if Chrome is running on port 9222 and launch it if not.
-
-0c. Output exactly this welcome message — nothing before it, nothing after it. Do not ask for the Figma URL yet.
+0b. Output exactly this welcome message — nothing before it, nothing after it. Do not ask for the Figma URL yet.
 
 ---
 
